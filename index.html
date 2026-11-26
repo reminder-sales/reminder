@@ -408,8 +408,13 @@ function buildTasks(){
   out.sort((a,b)=>a.due-b.due);
   return out;
 }
+/* 訊息不帶客戶名字；開頭依「複製當下」的時間換成早安／午安／晚安 */
+function greeting(){const h=new Date().getHours();return h>=5&&h<11?"早安":h>=11&&h<18?"午安":"晚安"}
+function fillGreet(text){return text.replaceAll("{greet}",greeting())}
 function message(task){
-  const tpl=task.stepTpl!=null?task.stepTpl:(state.settings.tpl[task.type]||"");
+  let tpl=task.stepTpl!=null?task.stepTpl:(state.settings.tpl[task.type]||"");
+  tpl=/\{name\}\s*您好/.test(tpl)?tpl.replace(/\{name\}\s*您好/g,"{greet}"):"{greet}，"+tpl.replace(/^\{name\}[，,、\s]*/,"");
+  tpl=tpl.replaceAll("{name}","");
   const sl=slots(task.due);
   return tpl.replaceAll("{next1}",fmt(addDays(task.due,1))).replaceAll("{next2}",fmt(addDays(task.due,2))).replaceAll("{tue}",sl.tue).replaceAll("{thu}",sl.thu).replaceAll("{name}",task.c.name).replaceAll("{item}",task.item||"保單")
     .replaceAll("{date}",fmtY(task.target)).replaceAll("{kind}",task.kind||"")
@@ -463,7 +468,7 @@ function taskHTML(k){
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
     <div class="actions">
       ${msgs.map(m=>`<button class="btn small" data-copy="${esc(m.text)}">複製${m.label?"「"+esc(m.label)+"」":"訊息"}</button>
-      <a class="btn small line" href="https://line.me/R/msg/text/?${encodeURIComponent(m.text)}" target="_blank" rel="noopener">${m.label?"LINE「"+esc(m.label)+"」":"用 LINE 傳"}</a>`).join("")}
+      <a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/msg/text/?${encodeURIComponent(fillGreet(m.text))}" target="_blank" rel="noopener">${m.label?"LINE「"+esc(m.label)+"」":"用 LINE 傳"}</a>`).join("")}
       <button class="btn small primary" data-done="${esc(k.key)}">✓ 已聯絡</button>
     </div></article>`;
 }
@@ -648,26 +653,27 @@ function renderSettings(){
   const S=state.settings;
   view.innerHTML=`
     <form class="card" id="setF">
+      <div class="tip">複製訊息時<b>不會帶入客戶名字</b>。範本開頭的「{name}您好」會依複製當下的時間，自動換成「早安」「午安」或「晚安」。</div>
       <h2>成交後的流程</h2>
-      <p class="note" style="margin:0">可用代碼：{name} 客戶、{item} 商品、{premium} 保費、{waits} 等待期、{next1}{next2} 明天和後天。沒有專屬訊息的步驟，會用下方「訊息範本 → 成交關懷」。</p>
+      <p class="note" style="margin:0">可用代碼：{item} 商品、{premium} 保費、{waits} 等待期、{next1}{next2} 明天和後天。沒有專屬訊息的步驟，會用下方「訊息範本 → 成交關懷」。</p>
       ${S.dealSteps.map((st,i)=>`<div class="stepedit">
         <div class="inline"><label for="dd_${i}">第</label><input id="dd_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
         ${st.tip?`<span class="hint">${esc(st.tip)}</span>`:""}
         ${st.alts?st.alts.map((a,j)=>`<label for="da_${i}_${j}" style="font-size:13px">${esc(a.label)}</label><textarea id="da_${i}_${j}" rows="4">${esc(a.tpl)}</textarea>`).join(""):st.tpl!=null?`<textarea id="dt_${i}" rows="5" aria-label="第${st.day}天訊息">${esc(st.tpl)}</textarea>`:""}</div>`).join("")}
       <h2>成交後的等待期提醒</h2>
-      <p class="note" style="margin:0">從成交日起算。各商品等待期不同，可依實際條款調整天數。可用代碼：{name} 客戶、{item} 商品。</p>
+      <p class="note" style="margin:0">從成交日起算。各商品等待期不同，可依實際條款調整天數。可用代碼：{item} 商品。</p>
       ${S.waitSteps.map((st,i)=>`<div class="stepedit">
         <div class="inline"><label for="wd_${i}">成交後第</label><input id="wd_${i}" type="number" min="1" value="${st.day}"><label>天　${esc(st.title)}</label></div>
         <span class="hint">${esc(st.tip||"")}</span>
         <textarea id="wtp_${i}" rows="4" aria-label="${esc(st.title)}訊息">${esc(st.tpl)}</textarea></div>`).join("")}
       <h2>給完建議書的 5 天流程</h2>
-      <p class="note" style="margin:0">每天做一件不同的事。可用代碼：{name} 客戶、{next1}{next2} 自動帶入明天、後天的日期。</p>
+      <p class="note" style="margin:0">每天做一件不同的事。可用代碼：{next1}{next2} 自動帶入明天、後天的日期。</p>
       ${S.proposalSteps.map((st,i)=>`<div class="stepedit">
         <div class="inline"><label for="pd_${i}">第</label><input id="pd_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
         <span class="hint">${esc(st.tip||"")}</span>
         <textarea id="pt_${i}" rows="4" aria-label="第${st.day}天訊息">${esc(st.tpl)}</textarea></div>`).join("")}
       <h2>見完客戶的 7 天流程</h2>
-      <p class="note" style="margin:0">七天裡，只有最後一則在約他；前面幾則都在讓他覺得你值得再見一次。可用代碼：{name} 客戶、{tue}{thu} 自動帶入下週二、週四的日期。</p>
+      <p class="note" style="margin:0">七天裡，只有最後一則在約他；前面幾則都在讓他覺得你值得再見一次。可用代碼：{tue}{thu} 自動帶入下週二、週四的日期。</p>
       ${S.meetSteps.map((st,i)=>`<div class="stepedit">
         <div class="inline"><label for="md_${i}">第</label><input id="md_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
         <span class="hint">${esc(st.tip||"")}</span>
@@ -675,7 +681,7 @@ function renderSettings(){
       <h2>客戶標籤</h2>
       <div class="field"><label for="sTags">可選的標籤</label><input id="sTags" value="${esc(S.tags.join("、"))}"><span class="hint">用頓號或逗號分隔</span></div>
       <h2>跳歲提醒</h2>
-      <p class="note" style="margin:0">跳歲日過了就不再提醒。可用代碼：{name} 客戶、{date} 跳歲日、{tue}{thu} 下週二、週四的日期。</p>
+      <p class="note" style="margin:0">跳歲日過了就不再提醒。可用代碼：{date} 跳歲日、{tue}{thu} 下週二、週四的日期。</p>
       ${S.ageSteps.map((st,i)=>`<div class="stepedit">
         <div class="inline"><label for="ad_${i}">跳歲前</label><input id="ad_${i}" type="number" min="1" value="${st.lead}"><label>天　${esc(st.title)}</label></div>
         <span class="hint">${esc(st.tip)}</span>
@@ -688,7 +694,7 @@ function renderSettings(){
         <div class="field" style="flex:1"><label for="sR">批註/加費</label><input id="sR" type="number" min="0" value="${S.riderLead}"></div>
       </div>
       <h2>訊息範本</h2>
-      <p class="note" style="margin:0">可用代碼：{name} 客戶、{item} 商品/保單、{date} 日期、{kind} 批註或加費</p>
+      <p class="note" style="margin:0">可用代碼：{item} 商品/保單、{date} 日期、{kind} 批註或加費</p>
       ${Object.keys(TYPES).filter(k=>!["meet","age","proposal","wait"].includes(k)).map(k=>`<div class="field"><label for="t_${k}">${TYPES[k].label}</label><textarea id="t_${k}" rows="3">${esc(S.tpl[k])}</textarea></div>`).join("")}
       <div class="actions"><button class="btn primary" type="submit">儲存設定</button></div>
     </form>
@@ -722,7 +728,8 @@ function renderSettings(){
   document.getElementById("imp").onclick=importSheet;
 }
 function bindCommon(){
-  view.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(b.dataset.copy,"訊息已複製，可貼到 LINE"));
+  view.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(fillGreet(b.dataset.copy),"訊息已複製，可貼到 LINE"));
+  view.querySelectorAll("[data-line]").forEach(a=>a.onclick=()=>{a.href="https://line.me/R/msg/text/?"+encodeURIComponent(fillGreet(a.dataset.line));});
   view.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openClient=b.dataset.open;render();});
   view.querySelectorAll("[data-card]").forEach(el=>el.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openClient=el.dataset.card;render();});
   view.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{state.done[b.dataset.done]=Date.now();save();render();toast("已標記完成");});
