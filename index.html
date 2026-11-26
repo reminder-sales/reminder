@@ -381,7 +381,26 @@ function message(task){
 const view=document.getElementById("view");
 let tab="today", range=30, query="", tagFilter="", openClient=null;
 function esc(s){return String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+function addMonths(d,n){return clampDate(d.getFullYear(),d.getMonth()+n,d.getDate())}
+/* A 級：最後一次成交滿半年且沒有新成交 → 依近半年紀錄降回 B／C／D（每筆成交只自動調整一次） */
+function applyStageRules(){
+  const t=today(), since=addMonths(t,-6); let changed=0;
+  for(const c of state.clients){
+    if(c.stage!=="A") continue;
+    const fs=state.followups.filter(f=>f.clientId===c.id);
+    const deals=fs.filter(f=>f.type==="deal").map(f=>f.date).sort();
+    if(!deals.length) continue;
+    const last=deals[deals.length-1];
+    if(c.stageAutoFrom===last) continue;
+    if(t<addMonths(parseD(last),6)) continue;
+    const recent=fs.filter(f=>parseD(f.date)>=since).map(f=>f.type);
+    c.stage=recent.includes("proposal")?"B":recent.includes("meet")?"C":"D";
+    c.stageAutoFrom=last; c.stageAutoOn=ymd(t); changed++;
+  }
+  if(changed){save(); setTimeout(()=>toast(changed+" 位客戶成交已滿半年，階段已自動調整"),300);}
+}
 function render(){
+  applyStageRules();
   const t=today();
   document.getElementById("todayLabel").innerHTML=esc(fmtY(t))+"<br>星期"+WD[t.getDay()];
   document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab&&!openClient?"page":"false"));
@@ -508,7 +527,7 @@ function renderClient(id){
       <div class="inline"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}">${c.stage||"D"}</span><div style="flex:1;min-width:0"><b style="font-size:20px">${esc(c.name)}</b>${c.example?'<span class="tag">範例</span>':""}</div>
       <button class="btn small" id="editC">編輯</button></div>
       <dl class="kv">
-        <dt>階段</dt><dd>${c.stage||"D"} 級：${STAGES[c.stage||"D"].label}</dd>
+        <dt>階段</dt><dd>${c.stage||"D"} 級：${STAGES[c.stage||"D"].label}${c.stageAutoOn&&c.stage!=="A"?`<br><span class="hint">${fmtY(parseD(c.stageAutoOn))} 因成交滿半年自動調整</span>`:""}</dd>
         <dt>生日</dt><dd>${c.bday?esc(c.bday.replace("-","/"))+"（下次 "+fmt(bd)+"）":"未填"}</dd>
         <dt>跳歲日</dt><dd>${jump?fmtY(jump)+"（還有 "+diff(jump,t)+" 天）":"需填生日"}</dd>
         <dt>標籤</dt><dd>${(c.tags||[]).length?tagsHTML(c):"—"}</dd>
