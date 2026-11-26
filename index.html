@@ -160,6 +160,13 @@ const DEFAULT_SETTINGS={
     {day:5,title:"問一個回一句話就好的問題",tip:"回得越短，越容易回。",tpl:"{name}您好，想請教一下，您比較在意的是保費，還是保障範圍呢？"},
     {day:7,title:"約下次見面：給兩個時間",tip:"給兩個時間，不問要不要。",tpl:"{name}您好，我下週二（{tue}）、週四（{thu}）晚上都有空，哪天方便把剩下的聊完？"}
   ],
+  proposalSteps:[
+    {day:1,title:"確認收到，幫他抓重點",tip:"確認他看得懂，不催決定。把建議書濃縮成三句話。",tpl:"{name}您好，昨天的建議書我幫您整理成三個重點：\n1. 保障什麼：\n2. 每年保費：\n3. 跟您擔心的事有什麼關係：\n有看不懂的地方都可以直接問我。"},
+    {day:2,title:"分享一個真實案例",tip:"用故事讓保障變具體，不要用數字壓人。案例記得去識別化。",tpl:"{name}您好，分享一個之前客戶的經驗，狀況跟您關心的很像，給您參考：\n（案例）"},
+    {day:3,title:"先回答他不好意思問的問題",tip:"挑一個常見疑問主動說明，例如繳不出來怎麼辦、可不可以只保一部分。",tpl:"{name}您好，很多人看建議書時都會想問：「如果中間繳不出來怎麼辦？」我先幫您整理好答案：\n（說明）"},
+    {day:4,title:"問一個回一句話就好的問題",tip:"給選項，回得越短越容易回。",tpl:"{name}您好，想請教一下，看完建議書，您覺得最需要再調整的是保費、保額，還是繳費年期？"},
+    {day:5,title:"約時間定案：給兩個時間",tip:"給兩個時間，不問要不要。只要 10 分鐘，降低壓力。",tpl:"{name}您好，建議書如果有想調整的地方，我們可以一起確認。{next1}或{next2}晚上，哪天方便給我 10 分鐘？"}
+  ],
   ageSteps:[
     {lead:60,title:"軟性聯絡",tip:"不提保險，單純關心近況，為一個月後的約訪暖身。",tpl:"{name}您好，好久不見！最近一切都好嗎？前陣子剛好想到您，跟您問候一下，有空再一起喝杯咖啡。"},
     {lead:30,title:"約訪跳歲保單檢視",tip:"跳歲前調整保障比較划算，給兩個時間讓客戶選。",tpl:"{name}您好，提醒您保險年齡將在{date}增加一歲，之後保費會跟著調整。想在這之前跟您約個時間一起檢視保單，看看保障需不需要調整。下週二（{tue}）或週四（{thu}）哪天比較方便呢？"}
@@ -252,6 +259,7 @@ const FU_LABEL={meet:"見面",proposal:"給建議書",deal:"成交"};
 function isFollow(type){return type in FU_LABEL}
 function flow(type){const S=state.settings;
   if(type==="meet") return S.meetSteps;
+  if(type==="proposal") return S.proposalSteps;
   return (type==="proposal"?S.proposalDays:S.dealDays).map(n=>({day:n}));}
 function dayLabel(n){return n===0?"當天":"第"+n+"天"}
 function slots(due){const toMon=((8-due.getDay())%7)||7, mon=addDays(due,toMon);
@@ -300,7 +308,7 @@ function buildTasks(){
 function message(task){
   const tpl=task.stepTpl!=null?task.stepTpl:(state.settings.tpl[task.type]||"");
   const sl=slots(task.due);
-  return tpl.replaceAll("{tue}",sl.tue).replaceAll("{thu}",sl.thu).replaceAll("{name}",task.c.name).replaceAll("{item}",task.item||"保單")
+  return tpl.replaceAll("{next1}",fmt(addDays(task.due,1))).replaceAll("{next2}",fmt(addDays(task.due,2))).replaceAll("{tue}",sl.tue).replaceAll("{thu}",sl.thu).replaceAll("{name}",task.c.name).replaceAll("{item}",task.item||"保單")
     .replaceAll("{date}",fmtY(task.target)).replaceAll("{kind}",task.kind||"");
 }
 
@@ -436,9 +444,14 @@ function renderSettings(){
   const S=state.settings;
   view.innerHTML=`
     <form class="card" id="setF">
-      <h2>傳訊息的天數</h2>
-      <div class="field"><label for="sP">剛給建議書後第幾天</label><input id="sP" inputmode="numeric" value="${S.proposalDays.join(",")}"><span class="hint">用逗號分隔，例如 1,3,7,14</span></div>
+      <h2>成交後的關懷天數</h2>
       <div class="field"><label for="sD">剛成交後第幾天</label><input id="sD" inputmode="numeric" value="${S.dealDays.join(",")}"></div>
+      <h2>給完建議書的 5 天流程</h2>
+      <p class="note" style="margin:0">每天做一件不同的事。可用代碼：{name} 客戶、{next1}{next2} 自動帶入明天、後天的日期。</p>
+      ${S.proposalSteps.map((st,i)=>`<div class="stepedit">
+        <div class="inline"><label for="pd_${i}">第</label><input id="pd_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
+        <span class="hint">${esc(st.tip||"")}</span>
+        <textarea id="pt_${i}" rows="4" aria-label="第${st.day}天訊息">${esc(st.tpl)}</textarea></div>`).join("")}
       <h2>見完客戶的 7 天流程</h2>
       <p class="note" style="margin:0">七天裡，只有最後一則在約他；前面幾則都在讓他覺得你值得再見一次。可用代碼：{name} 客戶、{tue}{thu} 自動帶入下週二、週四的日期。</p>
       ${S.meetSteps.map((st,i)=>`<div class="stepedit">
@@ -460,7 +473,7 @@ function renderSettings(){
       </div>
       <h2>訊息範本</h2>
       <p class="note" style="margin:0">可用代碼：{name} 客戶、{item} 商品/保單、{date} 日期、{kind} 批註或加費</p>
-      ${Object.keys(TYPES).filter(k=>k!=="meet"&&k!=="age").map(k=>`<div class="field"><label for="t_${k}">${TYPES[k].label}</label><textarea id="t_${k}" rows="3">${esc(S.tpl[k])}</textarea></div>`).join("")}
+      ${Object.keys(TYPES).filter(k=>!["meet","age","proposal"].includes(k)).map(k=>`<div class="field"><label for="t_${k}">${TYPES[k].label}</label><textarea id="t_${k}" rows="3">${esc(S.tpl[k])}</textarea></div>`).join("")}
       <div class="actions"><button class="btn primary" type="submit">儲存設定</button></div>
     </form>
     <div class="card">
@@ -473,11 +486,13 @@ function renderSettings(){
     e.preventDefault();
     const nums=v=>[...new Set(v.split(/[,，\s]+/).map(Number).filter(n=>Number.isInteger(n)&&n>0))].sort((a,b)=>a-b);
     const $=id=>document.getElementById(id);
-    const p=nums($("sP").value), d=nums($("sD").value);
-    if(!p.length||!d.length) return toast("天數至少要填一個正整數");
-    S.proposalDays=p; S.dealDays=d;
+    const d=nums($("sD").value);
+    if(!d.length) return toast("成交後的天數至少要填一個正整數");
+    S.dealDays=d;
+    S.proposalSteps.forEach((st,i)=>{st.day=Math.max(0,parseInt($("pd_"+i).value)||0); st.tpl=$("pt_"+i).value;});
+    S.proposalSteps.sort((a,b)=>a.day-b.day);
     S.anniLead=Math.max(0,+$("sA").value||0); S.riderLead=Math.max(0,+$("sR").value||0);
-    for(const k of Object.keys(TYPES)) if(k!=="meet"&&k!=="age") S.tpl[k]=$("t_"+k).value;
+    for(const k of Object.keys(TYPES)) if(!["meet","age","proposal"].includes(k)) S.tpl[k]=$("t_"+k).value;
     S.meetSteps.forEach((st,i)=>{st.day=Math.max(0,parseInt($("md_"+i).value)||0); if(!st.silent) st.tpl=$("mt_"+i).value;});
     S.meetSteps.sort((a,b)=>a.day-b.day);
     S.ageSteps.forEach((st,i)=>{st.lead=Math.max(1,parseInt($("ad_"+i).value)||st.lead); st.tpl=$("at_"+i).value;});
