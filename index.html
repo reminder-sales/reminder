@@ -181,45 +181,41 @@ const DEFAULT_SETTINGS={
   riderLead:14,
   fundDays:12,
   dealSteps:[
-    {day:1,title:"整理這次買了什麼",tip:"把商品、保費、等待期寫清楚，客戶安心，也減少日後誤會。",tpl:"{name}您好，恭喜您規劃了新的保障！幫您整理這次規劃的內容：\n・商品：{item}\n・保費：{premium}\n・等待期：{waits}{monthly}\n等待期過後保障就完整生效，到時候我會再提醒您。有任何問題隨時問我！"},
+    {day:1,title:"整理這次買了什麼",tip:"把商品、保費、等待期寫清楚，客戶安心，也減少日後誤會。",tpl:"{name}你好，恭喜你規劃了新的保障！幫你整理這次規劃的內容：\n・商品：{item}\n・保費：{premium}\n・等待期：{waits}{monthly}\n等待期過後保障就完整生效，到時候我會再提醒你。有任何問題隨時問我！"},
     {day:7,title:"查核保進度：有照會就主動聯絡，保單下來就約簽收",tip:"先查核保進度，再選一則傳：有照會就說明要補什麼；保單核發了就約時間簽收。",
-     alts:[{label:"有照會",tpl:"{name}您好，保險公司那邊有一些資料想再跟您確認（照會內容：　　），我先幫您整理好需要準備的東西。方便的話我們約個時間處理，越快補件，保單就越快下來。"},
-           {label:"約簽收",tpl:"{name}您好，好消息！您的{item}保單已經核發下來了，想約時間把保單送過去給您簽收，順便花 15 分鐘說明理賠怎麼申請。{next1}或{next2}哪天方便呢？"}]},
-    {day:30,title:"軟性關懷",tip:"不談保險，聊天氣、生活或他提過的事。",tpl:"{name}您好，最近天氣變化比較大，要多注意身體喔！最近有沒有去哪裡走走？"},
-    {day:90,title:"軟性關懷",tip:"不談保險，從他的標籤和筆記找話題。",tpl:"{name}您好，好一陣子沒聊了，最近好嗎？上次聽您說（他提過的事），後來怎麼樣了呢？"}
+     alts:[{label:"有照會",tpl:"{name}你好，保險公司那邊有一些資料想再跟你確認（照會內容：　　），我先幫你整理好需要準備的東西。方便的話我們約個時間處理，越快補件，保單就越快下來。"},
+           {label:"約簽收",tpl:"{name}你好，好消息！你的{item}保單已經核發下來了，想約時間把保單送過去給你簽收，順便花 15 分鐘說明理賠怎麼申請。{next1}或{next2}哪天方便呢？"}]},
+    {day:30,title:"軟性關懷",tip:"不談保險，聊天氣、生活或他提過的事。",tpl:"{name}你好，最近天氣變化比較大，要多注意身體喔！最近有沒有去哪裡走走？"},
+    {day:90,title:"軟性關懷",tip:"不談保險，從他的標籤和筆記找話題。",tpl:"{name}你好，好一陣子沒聊了，最近好嗎？上次聽你說（他提過的事），後來怎麼樣了呢？"}
   ],
   waitSteps:[
-    {day:30,title:"疾病等待期結束",tip:"讓客戶知道保障正式啟動，也提醒他有狀況先找你。",tpl:"{name}您好，跟您報告一個好消息：您的{item}從今天起已經過了 30 天的疾病等待期，之後因為疾病住院或手術都在保障範圍內了。有任何狀況隨時找我！"},
-    {day:90,title:"癌症等待期結束",tip:"順便提醒定期健康檢查，展現關心。",tpl:"{name}您好，您的{item}已經過了 90 天的癌症等待期，癌症相關的保障從今天起正式生效。也提醒您記得定期做健康檢查喔！"},
-    {day:365,title:"重大傷病等待期結束",tip:"滿一年是回訪和請客戶介紹朋友的好時機。",tpl:"{name}您好，您的{item}滿一年了，重大傷病的等待期也已經結束，保障都完整生效了。謝謝您這一年的信任，想約個時間聊聊這一年的變化，看看保障需不需要調整？"}
+    {day:30,title:"疾病等待期結束",tip:"讓客戶知道保障正式啟動，也提醒他有狀況先找你。",tpl:"{name}你好，跟你報告一個好消息：你的{item}從今天起已經過了 30 天的疾病等待期，之後因為疾病住院或手術都在保障範圍內了。有任何狀況隨時找我！"},
+    {day:90,title:"癌症等待期結束",tip:"順便提醒定期健康檢查，展現關心。",tpl:"{name}你好，你的{item}已經過了 90 天的癌症等待期，癌症相關的保障從今天起正式生效。也提醒你記得定期做健康檢查喔！"},
+    {day:365,title:"重大傷病等待期結束",tip:"滿一年是回訪和請客戶介紹朋友的好時機。",tpl:"{name}你好，你的{item}滿一年了，重大傷病的等待期也已經結束，保障都完整生效了。謝謝你這一年的信任，想約個時間聊聊這一年的變化，看看保障需不需要調整？"}
   ],
   meetSteps:[
-    {day:0,title:"當天晚上：整理今天的三個重點",tip:"只寫他說的，不寫你要賣的。",tpl:"{name}您好，今天謝謝您撥時間！今天聊到的三個重點，我整理給您：\n1. \n2. \n3. "},
-    {day:1,title:"傳一個他沒問、但用得到的資訊",tip:"找一則跟他提過的事有關的新聞，附上連結一起傳。",tpl:"{name}您好，上次我們討論到這件事（他提過的事），這則新聞有提到，方向跟我們那天討論的差不多，你有空可以看看"},
-    {day:2,silent:true,title:"什麼都不傳",tip:"讓他有時間想，也讓他發現你不急。",tpl:""},
-    {day:3,silent:true,title:"什麼都不傳",tip:"讓他有時間想，也讓他發現你不急。",tpl:""},
-    {day:4,title:"問一個回一句話就好的問題",tip:"回得越短，越容易回。",tpl:"{name}您好，你看完那個新聞有什麼想法嗎？"},
-    {day:5,title:"安排約訪：給兩個時間",tip:"給兩個時間，不問要不要。",tpl:"{name}您好，我下週二（{tue}）、週四（{thu}）晚上都有空，哪天方便把剩下的聊完？"}
+    {day:0,title:"當天晚上：整理今天的三個重點",tip:"只寫他說的，不寫你要賣的。",tpl:"{name}你好，今天謝謝你撥時間！今天聊到的三個重點，我整理給你：\n1. \n2. \n3. "},
+    {day:3,title:"傳一個他沒問、但用得到的資訊",tip:"找一則跟他提過的事有關的新聞，附上連結一起傳。",tpl:"{name}你好，上次我們討論到這件事（他提過的事），這則新聞有提到，方向跟我們那天討論的差不多，你有空可以看看"}
   ],
   proposalSteps:[
-    {day:1,title:"確認收到，幫他抓重點",tip:"確認他看得懂，不催決定。把建議書濃縮成三句話。",tpl:"{name}您好，昨天的建議書我幫您整理成三個重點：\n1. 保障什麼：\n2. 每年保費：\n3. 跟您擔心的事有什麼關係：\n有看不懂的地方都可以直接問我。"},
-    {day:2,title:"分享一個真實案例",tip:"用故事讓保障變具體，不要用數字壓人。案例記得去識別化。",tpl:"{name}您好，分享一個之前客戶的經驗，狀況跟您關心的很像，給您參考：\n（案例）"},
-    {day:3,title:"分享一則新聞",tip:"找一則跟他提過的事有關的新聞，附上連結一起傳。",tpl:"{name}您好，上次我們討論到的事（他提過的事），這則新聞有提到，方向跟我們那天討論的差不多，你有空可以看看"},
-    {day:4,title:"問一個回一句話就好的問題",tip:"給選項，回得越短越容易回。",tpl:"{name}您好，想請教一下，看完建議書，您覺得最需要再調整的是保費、保額，還是繳費年期？"},
-    {day:5,title:"約時間定案：給兩個時間",tip:"給兩個時間，不問要不要。只要 10 分鐘，降低壓力。",tpl:"{name}您好，建議書如果有想調整的地方，我們可以一起確認。{next1}或{next2}晚上，哪天方便給我 10 分鐘？"}
+    {day:1,title:"確認收到，幫他抓重點",tip:"確認他看得懂，不催決定。把建議書濃縮成三句話。",tpl:"{name}你好，昨天的建議書我幫你整理成三個重點：\n1. 保障什麼：\n2. 每年保費：\n3. 跟你擔心的事有什麼關係：\n有看不懂的地方都可以直接問我。"},
+    {day:2,title:"分享一個真實案例",tip:"用故事讓保障變具體，不要用數字壓人。案例記得去識別化。",tpl:"{name}你好，分享一個之前客戶的經驗，狀況跟你關心的很像，給你參考：\n（案例）"},
+    {day:3,title:"分享一則新聞",tip:"找一則跟他提過的事有關的新聞，附上連結一起傳。",tpl:"{name}你好，上次我們討論到的事（他提過的事），這則新聞有提到，方向跟我們那天討論的差不多，你有空可以看看"},
+    {day:4,title:"問一個回一句話就好的問題",tip:"給選項，回得越短越容易回。",tpl:"{name}你好，想請教一下，看完建議書，你覺得最需要再調整的是保費、保額，還是繳費年期？"},
+    {day:5,title:"約時間定案：給兩個時間",tip:"給兩個時間，不問要不要。只要 10 分鐘，降低壓力。",tpl:"{name}你好，建議書如果有想調整的地方，我們可以一起確認。{next1}或{next2}晚上，哪天方便給我 10 分鐘？"}
   ],
   ageSteps:[
-    {lead:60,title:"軟性聯絡",tip:"不提保險，單純關心近況，為一個月後的約訪暖身。",tpl:"{name}您好，好久不見！最近一切都好嗎？前陣子剛好想到您，跟您問候一下，有空再一起喝杯咖啡。"},
-    {lead:30,title:"約訪跳歲保單檢視",tip:"跳歲前調整保障比較划算，給兩個時間讓客戶選。",tpl:"{name}您好，提醒您保險年齡將在{date}增加一歲，之後保費會跟著調整。想在這之前跟您約個時間一起檢視保單，看看保障需不需要調整。下週二（{tue}）或週四（{thu}）哪天比較方便呢？"}
+    {lead:60,title:"軟性聯絡",tip:"不提保險，單純關心近況，為一個月後的約訪暖身。",tpl:"{name}你好，好久不見！最近一切都好嗎？前陣子剛好想到你，跟你問候一下，有空再一起喝杯咖啡。"},
+    {lead:30,title:"約訪跳歲保單檢視",tip:"跳歲前調整保障比較划算，給兩個時間讓客戶選。",tpl:"{name}你好，提醒你保險年齡將在{date}增加一歲，之後保費會跟著調整。想在這之前跟你約個時間一起檢視保單，看看保障需不需要調整。下週二（{tue}）或週四（{thu}）哪天比較方便呢？"}
   ],
   tags:["股票","房地產","頂客族","體況","儲蓄險愛用戶","有小孩","有車","愛出國"],
   tpl:{
-    fund:"{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給您，有任何問題隨時問我！",
-    proposal:"{name}您好，前幾天跟您討論的{item}建議書，不知道您看過了嗎？有任何問題都可以隨時問我喔！",
-    deal:"{name}您好，謝謝您的信任！{item}已經在處理中，之後有任何需要都可以找我，祝您一切順心。",
-    anni:"{name}您好，您的{item}即將在{date}滿週年，想跟您約個時間一起檢視保障是否還符合需求。",
-    age:"{name}您好，提醒您保險年齡將在{date}增加一歲，若有規劃中的保障，在這之前投保保費會比較划算喔！",
-    rider:"{name}您好，您的{item}當初有{kind}，目前已符合可以申請複查的時間，想跟您約時間準備資料，看看能不能取消。"
+    fund:"{name}你好，跟你報告：你的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給你，有任何問題隨時問我！",
+    proposal:"{name}你好，前幾天跟你討論的{item}建議書，不知道你看過了嗎？有任何問題都可以隨時問我喔！",
+    deal:"{name}你好，謝謝你的信任！{item}已經在處理中，之後有任何需要都可以找我，祝你一切順心。",
+    anni:"{name}你好，你的{item}即將在{date}滿週年，想跟你約個時間一起檢視保障是否還符合需求。",
+    age:"{name}你好，提醒你保險年齡將在{date}增加一歲，若有規劃中的保障，在這之前投保保費會比較划算喔！",
+    rider:"{name}你好，你的{item}當初有{kind}，目前已符合可以申請複查的時間，想跟你約時間準備資料，看看能不能取消。"
   }
 };
 let state=load();
@@ -233,6 +229,10 @@ function load(){
   s.settings.tpl=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS.tpl),(s.settings&&s.settings.tpl)||{});
   s.done=s.done||{};
   s.opps=s.opps||[];
+  /* 舊設定升級：成交第 1 天訊息加入月配息、基金進場訊息加入金額 */
+  if(s.settings.tpl.fund==="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。之後每月配息入帳的時間和查詢方式，我再整理給您，有任何問題隨時問我！") s.settings.tpl.fund="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給您，有任何問題隨時問我！";
+  const d1=(s.settings.dealSteps||[]).find(x=>x.day===1);
+  if(d1&&d1.tpl&&d1.tpl.includes("・等待期：{waits}")&&!d1.tpl.includes("{monthly}")) d1.tpl=d1.tpl.replace("・等待期：{waits}","・等待期：{waits}{monthly}");
   /* v2 訊息更新：見面後追蹤、建議書第 3 天、成交第 1／30／90 天 */
   if((s.settings.msgVer||1)<2){
     s.settings.meetSteps=structuredCloneSafe(DEFAULT_SETTINGS.meetSteps);
@@ -244,10 +244,15 @@ function load(){
     }
     s.settings.msgVer=2;
   }
-  /* 舊設定升級：成交第 1 天訊息加入月配息、基金進場訊息加入金額 */
-  if(s.settings.tpl.fund==="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。之後每月配息入帳的時間和查詢方式，我再整理給您，有任何問題隨時問我！") s.settings.tpl.fund="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給您，有任何問題隨時問我！";
-  const d1=(s.settings.dealSteps||[]).find(x=>x.day===1);
-  if(d1&&d1.tpl&&d1.tpl.includes("・等待期：{waits}")&&!d1.tpl.includes("{monthly}")) d1.tpl=d1.tpl.replace("・等待期：{waits}","・等待期：{waits}{monthly}");
+  /* v3：見面後追蹤改為當天＋第 3 天；訊息一律用「你」 */
+  if((s.settings.msgVer||1)<3){
+    s.settings.meetSteps=structuredCloneSafe(DEFAULT_SETTINGS.meetSteps);
+    const fix=t=>typeof t==="string"?t.replaceAll("您","你"):t;
+    for(const k of Object.keys(s.settings.tpl||{})) s.settings.tpl[k]=fix(s.settings.tpl[k]);
+    for(const arr of ["proposalSteps","dealSteps","waitSteps","ageSteps"]) for(const st of (s.settings[arr]||[])){
+      st.tpl=fix(st.tpl); (st.alts||[]).forEach(a=>a.tpl=fix(a.tpl)); }
+    s.settings.msgVer=3;
+  }
   for(const c of s.clients){ if(!c.stage){ /* 舊資料：依追蹤紀錄推估階段 */
     const ts=s.followups.filter(f=>f.clientId===c.id).map(f=>f.type);
     c.stage=ts.includes("deal")?"A":ts.includes("proposal")?"B":ts.includes("meet")?"C":"D"; } }
@@ -426,8 +431,8 @@ function greeting(){const h=new Date().getHours();return h>=5&&h<11?"早安":h>=
 function fillGreet(text){return text.replaceAll("{greet}",greeting())}
 function message(task){
   let tpl=task.stepTpl!=null?task.stepTpl:(state.settings.tpl[task.type]||"");
-  tpl=/\{name\}\s*您好/.test(tpl)?tpl.replace(/\{name\}\s*您好/g,"{greet}"):"{greet}，"+tpl.replace(/^\{name\}[，,、\s]*/,"");
-  tpl=tpl.replaceAll("{name}","");
+  tpl=/\{name\}\s*[您你]好/.test(tpl)?tpl.replace(/\{name\}\s*[您你]好/g,"{greet}"):"{greet}，"+tpl.replace(/^\{name\}[，,、\s]*/,"");
+  tpl=tpl.replaceAll("{name}","").replaceAll("您","你");
   const sl=slots(task.due);
   return tpl.replaceAll("{next1}",fmt(addDays(task.due,1))).replaceAll("{next2}",fmt(addDays(task.due,2))).replaceAll("{tue}",sl.tue).replaceAll("{thu}",sl.thu).replaceAll("{name}",task.c.name).replaceAll("{item}",task.item||"保單")
     .replaceAll("{date}",fmtY(task.target)).replaceAll("{kind}",task.kind||"")
@@ -688,7 +693,7 @@ function renderSettings(){
   const S=state.settings;
   view.innerHTML=`
     <form class="card" id="setF">
-      <div class="tip">複製訊息時<b>不會帶入客戶名字</b>。範本開頭的「{name}您好」會依複製當下的時間，自動換成「早安」「午安」或「晚安」。</div>
+      <div class="tip">複製訊息時<b>不會帶入客戶名字</b>。範本開頭的「{name}你好」會依複製當下的時間，自動換成「早安」「午安」或「晚安」。</div>
       <h2>成交後的流程</h2>
       <p class="note" style="margin:0">可用代碼：{item} 商品、{premium} 保費、{waits} 等待期、{next1}{next2} 明天和後天。沒有專屬訊息的步驟，會用下方「訊息範本 → 成交關懷」。</p>
       ${S.dealSteps.map((st,i)=>`<div class="stepedit">
