@@ -17,7 +17,7 @@
 :root{
   --bg:#EEF2F0; --surface:#FFFFFF; --ink:#16302A; --muted:#5A6D67; --line:#D8E1DD;
   --accent:#0F6B5C; --accent-ink:#FFFFFF; --accent-soft:#DCEDE8;
-  --c-meet:#A63D6B; --c-prop:#2F5DA8; --c-deal:#0F7A55; --c-anni:#A86200; --c-age:#6A4C9C; --c-rider:#B3362B; --c-wait:#1F6F8B;
+  --c-meet:#A63D6B; --c-prop:#2F5DA8; --c-deal:#0F7A55; --c-anni:#A86200; --c-age:#6A4C9C; --c-rider:#B3362B; --c-wait:#1F6F8B; --c-fund:#5E6B10;
   --warn-bg:#FBEDEA;
   --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
@@ -26,12 +26,12 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F1715; --surface:#17221F; --ink:#E4EEEA; --muted:#97AAA4; --line:#2A3833;
   --accent:#4CC2A8; --accent-ink:#06231C; --accent-soft:#1D3A33;
-  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4;
+  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E;
   --warn-bg:#3A2220; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0F1715; --surface:#17221F; --ink:#E4EEEA; --muted:#97AAA4; --line:#2A3833;
   --accent:#4CC2A8; --accent-ink:#06231C; --accent-soft:#1D3A33;
-  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4;
+  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E;
   --warn-bg:#3A2220; color-scheme:dark;}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -52,7 +52,7 @@ h2{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin
 h2 .count{font-family:var(--f-num);background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:0 8px;font-size:12px}
 .section{display:flex;flex-direction:column;gap:10px}
 .summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
-@media (min-width:540px){.summary{grid-template-columns:repeat(7,1fr)}}
+@media (min-width:540px){.summary{grid-template-columns:repeat(8,1fr)}}
 .sum{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
 .sum b{display:block;font-family:var(--f-num);font-size:20px;line-height:1.2}
 .sum span{font-size:11px;color:var(--muted)}
@@ -89,7 +89,7 @@ h2 .count{font-family:var(--f-num);background:var(--accent-soft);color:var(--acc
 .step.due{border-color:var(--c-rider);color:var(--c-rider)}
 .backlink{background:none;border:none;color:var(--accent);padding:0;font-size:14px;align-self:flex-start}
 nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:6;padding-bottom:env(safe-area-inset-bottom,0px)}
-nav.tabs .wrap{display:grid;grid-template-columns:1fr 1fr auto 1fr 1fr;align-items:center;gap:4px;padding-block:6px}
+nav.tabs .wrap{display:grid;grid-template-columns:1fr 1fr 1fr auto 1fr 1fr;align-items:center;gap:4px;padding-block:6px}
 nav.tabs button.tab{background:none;border:none;display:flex;flex-direction:column;align-items:center;font-size:12px;color:var(--muted);padding:4px 0;gap:2px}
 nav.tabs button.tab svg{width:22px;height:22px}
 nav.tabs button.tab[aria-current="page"]{color:var(--accent);font-weight:700}
@@ -109,6 +109,12 @@ nav.tabs button.tab[aria-current="page"]{color:var(--accent);font-weight:700}
 .note{font-size:13px;color:var(--muted);line-height:1.6}
 .banner{background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 textarea{resize:vertical}
+.opp{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.opp.done{opacity:.6}
+.opp .txt{white-space:pre-wrap;font-size:15px;overflow-wrap:anywhere}
+.opp .meta{font-family:var(--f-num);font-size:12px;color:var(--muted)}
+.match{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px;color:var(--muted)}
+.match button{border:1px solid var(--accent);color:var(--accent);background:var(--surface);border-radius:14px;padding:1px 10px;font-size:13px}
 .tip{font-size:13px;background:var(--accent-soft);border-radius:6px;padding:6px 8px;color:var(--ink)}
 .tip b{color:var(--accent)}
 .ctags{display:flex;flex-wrap:wrap;gap:4px}
@@ -135,6 +141,7 @@ textarea{resize:vertical}
 <nav class="tabs"><div class="wrap">
   <button class="tab" data-tab="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>今日</button>
   <button class="tab" data-tab="upcoming"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>即將</button>
+  <button class="tab" data-tab="opps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z"/></svg>商機</button>
   <button class="fab" id="fab" aria-label="新增客戶">+</button>
   <button class="tab" data-tab="clients"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>客戶</button>
   <button class="tab" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
@@ -153,6 +160,7 @@ const DEFAULT_SETTINGS={
   anniLead:30,
   ageLead:30,
   riderLead:14,
+  fundDays:12,
   waitSteps:[
     {day:30,title:"疾病等待期結束",tip:"讓客戶知道保障正式啟動，也提醒他有狀況先找你。",tpl:"{name}您好，跟您報告一個好消息：您的{item}從今天起已經過了 30 天的疾病等待期，之後因為疾病住院或手術都在保障範圍內了。有任何狀況隨時找我！"},
     {day:90,title:"癌症等待期結束",tip:"順便提醒定期健康檢查，展現關心。",tpl:"{name}您好，您的{item}已經過了 90 天的癌症等待期，癌症相關的保障從今天起正式生效。也提醒您記得定期做健康檢查喔！"},
@@ -178,6 +186,7 @@ const DEFAULT_SETTINGS={
   ],
   tags:["股票","房地產","頂客族","體況","儲蓄險愛用戶","有小孩","有車","愛出國"],
   tpl:{
+    fund:"{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。之後每月配息入帳的時間和查詢方式，我再整理給您，有任何問題隨時問我！",
     proposal:"{name}您好，前幾天跟您討論的{item}建議書，不知道您看過了嗎？有任何問題都可以隨時問我喔！",
     deal:"{name}您好，謝謝您的信任！{item}已經在處理中，之後有任何需要都可以找我，祝您一切順心。",
     anni:"{name}您好，您的{item}即將在{date}滿週年，想跟您約個時間一起檢視保障是否還符合需求。",
@@ -186,7 +195,7 @@ const DEFAULT_SETTINGS={
   }
 };
 let state=load();
-function blank(){return{clients:[],followups:[],policies:[],done:{},settings:structuredCloneSafe(DEFAULT_SETTINGS),seeded:false}}
+function blank(){return{opps:[],clients:[],followups:[],policies:[],done:{},settings:structuredCloneSafe(DEFAULT_SETTINGS),seeded:false}}
 function structuredCloneSafe(o){return JSON.parse(JSON.stringify(o))}
 function load(){
   let s=null;
@@ -195,6 +204,7 @@ function load(){
   s.settings=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS),s.settings||{});
   s.settings.tpl=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS.tpl),(s.settings&&s.settings.tpl)||{});
   s.done=s.done||{};
+  s.opps=s.opps||[];
   return s;
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("無法儲存：瀏覽器封鎖了本機儲存");}}
@@ -257,7 +267,8 @@ const TYPES={
   anni:{label:"保單週年",color:"var(--c-anni)"},
   age:{label:"跳歲提醒",color:"var(--c-age)"},
   rider:{label:"批註/加費",color:"var(--c-rider)"},
-  wait:{label:"等待期結束",color:"var(--c-wait)"}
+  wait:{label:"等待期結束",color:"var(--c-wait)"},
+  fund:{label:"基金進場",color:"var(--c-fund)"}
 };
 const RIDER={none:"無",exclusion:"批註（除外責任）",loading:"加費",both:"批註＋加費"};
 function client(id){return state.clients.find(c=>c.id===id)}
@@ -298,6 +309,10 @@ function buildTasks(){
   }
   for(const p of state.policies){
     const c=client(p.clientId); if(!c) continue;
+    if(p.monthly&&p.signDate){const key="fd:"+p.id+":"+p.signDate;
+      if(!state.done[key]){const due=addDays(parseD(p.signDate),S.fundDays);
+        out.push({key,type:"fund",c,due,target:due,item:p.name,tip:"順便說明第一次配息大約什麼時候入帳、怎麼查詢。",
+          detail:p.name+" · 月配息 · "+fmtY(parseD(p.signDate))+" 簽收後第 "+S.fundDays+" 天"});}}
     const a=nextAnniversary(p.eff,grace);
     if(a){const key="an:"+p.id+":"+ymd(a);
       if(!state.done[key]) out.push({key,type:"anni",c,due:addDays(a,-S.anniLead),target:a,item:p.name,detail:p.name+" · "+fmtY(a)+" 滿 "+(a.getFullYear()-parseD(p.eff).getFullYear())+" 週年"});}
@@ -338,7 +353,7 @@ function render(){
   document.getElementById("todayLabel").innerHTML=esc(fmtY(t))+"<br>星期"+WD[t.getDay()];
   document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab&&!openClient?"page":"false"));
   if(openClient) return renderClient(openClient);
-  ({today:renderToday,upcoming:renderUpcoming,clients:renderClients,settings:renderSettings})[tab]();
+  ({today:renderToday,upcoming:renderUpcoming,opps:renderOpps,clients:renderClients,settings:renderSettings})[tab]();
   window.scrollTo(0,0);
 }
 function taskHTML(k){
@@ -366,15 +381,17 @@ function renderToday(){
   const t=today(), all=buildTasks();
   const due=all.filter(k=>k.due<=t);
   const counts={}; for(const k of due) counts[k.type]=(counts[k.type]||0)+1;
-  const SHORT={meet:"見面",proposal:"建議書",deal:"成交",anni:"週年",age:"跳歲",rider:"批註加費",wait:"等待期"};
+  const SHORT={meet:"見面",proposal:"建議書",deal:"成交",anni:"週年",age:"跳歲",rider:"批註加費",wait:"等待期",fund:"基金進場"};
   const sum=Object.entries(TYPES).map(([k,v])=>`<div class="sum" style="color:${v.color}"><b>${counts[k]||0}</b><span>${SHORT[k]}</span></div>`).join("");
   view.innerHTML=`
+    ${state.opps.filter(o=>!o.done).length?`<div class="banner"><span>早會商機還有 <b>${state.opps.filter(o=>!o.done).length}</b> 筆未處理</span><button class="btn small" id="goOpps">查看</button></div>`:""}
     ${state.seeded?`<div class="banner"><span>目前顯示的是<b>範例客戶</b>，看懂之後可以一鍵清除。</span><button class="btn small" id="clearSeed">清除範例</button></div>`:""}
     <div class="summary">${sum}</div>
     <section class="section"><h2>今天要聯絡 <span class="count">${due.length}</span></h2>
       ${due.length?due.map(taskHTML).join(""):`<div class="empty">今天沒有待辦。<br>見完客戶後按下方「＋」新增。</div>`}
     </section>`;
   bindCommon();
+  const go=document.getElementById("goOpps"); if(go) go.onclick=()=>{tab="opps";render();};
   const cs=document.getElementById("clearSeed");
   if(cs) cs.onclick=()=>confirmSheet("清除所有範例客戶？","你自己新增的客戶不會被刪除。",()=>{
     const ids=new Set(state.clients.filter(c=>c.example).map(c=>c.id));
@@ -392,6 +409,39 @@ function renderUpcoming(){
     <div class="seg">${[7,30,90].map(n=>`<button data-range="${n}" aria-pressed="${n===range}">${n} 天</button>`).join("")}</div></div>
     <section class="section">${list.length?list.map(taskHTML).join(""):`<div class="empty">未來 ${range} 天內沒有提醒。</div>`}</section>`;
   view.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{range=+b.dataset.range;render();});
+  bindCommon();
+}
+let oppShow="open";
+function oppMatches(o){return (o.tags||[]).length?state.clients.filter(c=>(c.tags||[]).some(x=>o.tags.includes(x))):[]}
+function renderOpps(){
+  const t=today();
+  const list=state.opps.filter(o=>oppShow==="all"||!o.done).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  view.innerHTML=`
+    <form class="card" id="oppF">
+      <h2>早會商機筆記</h2>
+      <div class="field"><label for="oppT">今天早會聽到什麼商機？</label><textarea id="oppT" rows="3" placeholder="例：下個月起某商品停售，有小孩的客戶可以先規劃教育金"></textarea></div>
+      <div class="field"><label>適合哪類客戶（選標籤，會自動列出符合的客戶）</label>
+        <div class="tagpick" id="oppTags">${state.settings.tags.map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="false">${esc(x)}</button>`).join("")}</div></div>
+      <div class="inline"><input id="oppD" type="date" value="${ymd(t)}" aria-label="日期" style="flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px"><button class="btn primary" type="submit">記下來</button></div>
+    </form>
+    <div class="inline" style="justify-content:space-between;flex-wrap:wrap"><h2>商機清單 <span class="count">${list.length}</span></h2>
+      <div class="seg"><button data-os="open" aria-pressed="${oppShow==="open"}">未處理</button><button data-os="all" aria-pressed="${oppShow==="all"}">全部</button></div></div>
+    <section class="section">${list.length?list.map(o=>{const m=oppMatches(o);return `<article class="opp ${o.done?"done":""}">
+      <div class="meta">${fmtY(parseD(o.date))}${o.done?" · 已處理":""}</div>
+      <div class="txt">${esc(o.text)}</div>
+      ${(o.tags||[]).length?`<div class="ctags">${o.tags.map(x=>`<span class="ctag">${esc(x)}</span>`).join("")}</div>`:""}
+      ${(o.tags||[]).length?`<div class="match">符合的客戶 ${m.length} 位：${m.map(c=>`<button data-open="${c.id}">${esc(c.name)}</button>`).join("")||"（目前沒有）"}</div>`:""}
+      <div class="actions"><button class="btn small" data-copy="${esc(o.text)}">複製</button><button class="btn small danger" data-odel="${o.id}">刪除</button><button class="btn small ${o.done?"":"primary"}" data-odone="${o.id}">${o.done?"改回未處理":"✓ 已處理"}</button></div>
+    </article>`}).join(""):`<div class="empty">${oppShow==="open"?"沒有未處理的商機。":"還沒有商機筆記。"}</div>`}</section>`;
+  const tp=document.getElementById("oppTags");
+  tp.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
+  document.getElementById("oppF").onsubmit=e=>{e.preventDefault();
+    const text=document.getElementById("oppT").value.trim(); if(!text) return toast("請先輸入商機內容");
+    state.opps.push({id:uid(),date:document.getElementById("oppD").value||ymd(t),text,tags:[...tp.querySelectorAll('[aria-pressed="true"]')].map(b=>b.dataset.tag),done:false});
+    save();oppShow="open";render();toast("已記下商機");};
+  view.querySelectorAll("[data-os]").forEach(b=>b.onclick=()=>{oppShow=b.dataset.os;render();});
+  view.querySelectorAll("[data-odone]").forEach(b=>b.onclick=()=>{const o=state.opps.find(x=>x.id===b.dataset.odone);o.done=!o.done;save();render();});
+  view.querySelectorAll("[data-odel]").forEach(b=>b.onclick=()=>confirmSheet("刪除這筆商機？","",()=>{state.opps=state.opps.filter(x=>x.id!==b.dataset.odel);save();render();}));
   bindCommon();
 }
 function renderClients(){
@@ -444,6 +494,7 @@ function renderClient(id){
       <div class="actions"><button class="btn" id="addP">＋ 新增保單</button></div>
       ${pols.map(p=>{const a=nextAnniversary(p.eff,t);return `<div class="card" style="gap:6px"><div class="inline" style="justify-content:space-between"><b>${esc(p.name)}</b><button class="btn small" data-editp="${p.id}">編輯</button></div>
         <dl class="kv"><dt>生效日</dt><dd>${fmtY(parseD(p.eff))}</dd><dt>下次週年</dt><dd>${a?fmtY(a)+"（還有 "+diff(a,t)+" 天）":"—"}</dd>
+        ${p.monthly?`<dt>月配息</dt><dd>${p.signDate?fmtY(parseD(p.signDate))+" 簽收，"+fmtY(addDays(parseD(p.signDate),state.settings.fundDays))+" 提醒基金進場":"尚未填簽收日"}</dd>`:""}
         <dt>批註/加費</dt><dd>${RIDER[p.rider||"none"]}${p.rider&&p.rider!=="none"&&p.reviewDate?"，"+fmtY(parseD(p.reviewDate))+" 可申請複查":""}</dd>
         ${p.note?`<dt>備註</dt><dd>${esc(p.note)}</dd>`:""}</dl></div>`}).join("")||`<div class="empty">尚無保單</div>`}
     </section>
@@ -491,6 +542,8 @@ function renderSettings(){
         <div class="inline"><label for="ad_${i}">跳歲前</label><input id="ad_${i}" type="number" min="1" value="${st.lead}"><label>天　${esc(st.title)}</label></div>
         <span class="hint">${esc(st.tip)}</span>
         <textarea id="at_${i}" rows="4" aria-label="${esc(st.title)}訊息">${esc(st.tpl)}</textarea></div>`).join("")}
+      <h2>月配息基金進場</h2>
+      <div class="field"><label for="sF">保單簽收後第幾天提醒</label><input id="sF" type="number" min="1" value="${S.fundDays}"></div>
       <h2>提前幾天提醒</h2>
       <div class="inline">
         <div class="field" style="flex:1"><label for="sA">保單週年</label><input id="sA" type="number" min="0" value="${S.anniLead}"></div>
@@ -514,6 +567,7 @@ function renderSettings(){
     const d=nums($("sD").value);
     if(!d.length) return toast("成交後的天數至少要填一個正整數");
     S.dealDays=d;
+    S.fundDays=Math.max(1,parseInt($("sF").value)||12);
     S.waitSteps.forEach((st,i)=>{st.day=Math.max(1,parseInt($("wd_"+i).value)||st.day); st.tpl=$("wtp_"+i).value;});
     S.proposalSteps.forEach((st,i)=>{st.day=Math.max(0,parseInt($("pd_"+i).value)||0); st.tpl=$("pt_"+i).value;});
     S.proposalSteps.sort((a,b)=>a.day-b.day);
@@ -633,11 +687,15 @@ function policySheet(clientId,p){
       <div class="field" id="rvF" ${p.rider==="none"?"hidden":""}><label for="pv">可申請複查（拿掉批註/加費）日期</label>
         <input id="pv" type="date" value="${esc(p.reviewDate)}">
         <div class="actions"><button type="button" class="btn small" data-plus="6">生效後半年</button><button type="button" class="btn small" data-plus="12">生效後 1 年</button><button type="button" class="btn small" data-plus="24">生效後 2 年</button></div></div>
+      <label class="inline" style="font-size:14px;font-weight:700"><input type="checkbox" id="pm" ${p.monthly?"checked":""} style="width:auto"> 月配息類型商品</label>
+      <div class="field" id="pmF" ${p.monthly?"":"hidden"}><label for="ps">保單簽收日</label><input id="ps" type="date" value="${esc(p.signDate||"")}">
+        <span class="hint">簽收後第 ${state.settings.fundDays} 天提醒你告訴客戶基金已經進場（天數可在設定修改）</span></div>
       <div class="field"><label for="pno">備註（例：需附健檢報告）</label><textarea id="pno" rows="2">${esc(p.note)}</textarea></div>
       <div class="actions">${isNew?"":`<button type="button" class="btn danger" id="pdel" style="margin-right:auto">刪除</button>`}<button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">儲存</button></div>
     </form>`,()=>{
     const pr=document.getElementById("pr"), pe=document.getElementById("pe"), pv=document.getElementById("pv");
     pr.onchange=()=>document.getElementById("rvF").hidden=pr.value==="none";
+    const pm=document.getElementById("pm"); pm.onchange=()=>document.getElementById("pmF").hidden=!pm.checked;
     root.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{
       if(!pe.value) return toast("請先填生效日");
       const e=parseD(pe.value);pv.value=ymd(clampDate(e.getFullYear(),e.getMonth()+ +b.dataset.plus,e.getDate()));});
@@ -647,7 +705,8 @@ function policySheet(clientId,p){
       const name=document.getElementById("pn").value.trim();
       if(!name) return toast("請填保單名稱"); if(!pe.value) return toast("請填生效日");
       if(pr.value!=="none"&&!pv.value) return toast("請填可申請複查的日期");
-      const data={name,eff:pe.value,rider:pr.value,reviewDate:pr.value==="none"?"":pv.value,note:document.getElementById("pno").value.trim()};
+      const data={name,eff:pe.value,rider:pr.value,reviewDate:pr.value==="none"?"":pv.value,note:document.getElementById("pno").value.trim(),
+        monthly:pm.checked,signDate:pm.checked?document.getElementById("ps").value:""};
       if(isNew) state.policies.push(Object.assign({id:uid(),clientId},data)); else Object.assign(p,data);
       save();closeSheet();render();toast("已儲存保單");};
   });
