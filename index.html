@@ -56,7 +56,7 @@ h2 .count{font-family:var(--f-num);background:var(--accent-soft);color:var(--acc
 .sum{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
 .sum b{display:block;font-family:var(--f-num);font-size:20px;line-height:1.2}
 .sum span{font-size:11px;color:var(--muted)}
-.task{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.task{cursor:pointer;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .task.overdue{background:var(--warn-bg)}
 .task .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .chip{font-size:12px;font-weight:700;color:var(--tc);border:1px solid var(--tc);border-radius:6px;padding:0 6px;white-space:nowrap}
@@ -109,6 +109,8 @@ nav.tabs button.tab[aria-current="page"]{color:var(--accent);font-weight:700}
 .note{font-size:13px;color:var(--muted);line-height:1.6}
 .banner{background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 textarea{resize:vertical}
+.task .go{color:var(--muted);font-size:18px;line-height:1;margin-left:2px}
+.task:active{filter:brightness(.97)}
 .nameinput{font-size:20px;font-weight:700;border:1px solid transparent;border-bottom:1px dashed var(--line);background:transparent;border-radius:6px 6px 0 0;padding:4px 6px;width:100%;min-width:0}
 .nameinput:hover,.nameinput:focus{border-color:var(--line);background:var(--bg)}
 .saved{font-size:12px;color:var(--muted);text-align:right}
@@ -271,7 +273,7 @@ function seed(s){
   const c2={id:uid(),name:"林Ｏ婷",bday:pad2(back.getMonth()+1)+"-"+pad2(back.getDate()),note:"考慮醫療險升級",tags:["愛出國","體況"],stage:"B",example:true};
   const c3={id:uid(),name:"王ＯＯ",bday:"03-15",note:"公司主管，重視退休規劃",tags:["股票","儲蓄險愛用戶"],stage:"A",example:true};
   s.clients.push(c1,c2,c3);
-  s.followups.push({id:uid(),clientId:c1.id,type:"meet",date:ymd(addDays(t,-3)),item:""});
+  s.followups.push({id:uid(),clientId:c1.id,type:"meet",date:ymd(addDays(t,-3)),item:"",track:true});
   s.followups.push({id:uid(),clientId:c2.id,type:"proposal",date:ymd(addDays(t,-3)),item:"實支實付醫療險"});
   s.followups.push({id:uid(),clientId:c3.id,type:"deal",date:ymd(addDays(t,-7)),item:"利變型終身壽險"});
   const eff=addDays(t,18); eff.setFullYear(eff.getFullYear()-2);
@@ -323,6 +325,7 @@ function buildTasks(){
   const grace=addDays(t,-30);
   for(const f of state.followups){
     const c=client(f.clientId); if(!c) continue;
+    if(f.type==="meet"&&!f.track) continue;  /* 單純見面只記錄，不啟動 7 天追蹤 */
     const steps=flow(f.type).filter(st=>!st.silent);
     const base=parseD(f.date);
     steps.forEach((st,i)=>{
@@ -421,15 +424,14 @@ function taskHTML(k){
   if(isFu) when=d<0?"逾期 "+(-d)+" 天":d===0?"今天":fmt(k.due);
   else when=dt<0?"已過 "+(-dt)+" 天":dt===0?"就是今天":(d<=0?"":"提醒 "+fmt(k.due)+" · ")+"還有 "+dt+" 天";
   const msgs=k.alts?k.alts.map(a=>({label:a.label,text:message(Object.assign({},k,{stepTpl:a.tpl}))})):[{label:"",text:message(k)}];
-  return `<article class="task ${late?"overdue":""}" style="--tc:${ty.color}">
-    <div class="row1"><span class="chip">${ty.label}</span>${stageHTML(k.c)}<span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span></div>
+  return `<article class="task ${late?"overdue":""}" style="--tc:${ty.color}" data-card="${k.c.id}" title="點一下打開客戶資料">
+    <div class="row1"><span class="chip">${ty.label}</span>${stageHTML(k.c)}<span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span><span class="go" aria-hidden="true">›</span></div>
     <div class="detail">${esc(k.detail)}</div>
     ${k.tip?`<div class="tip"><b>訣竅</b>　${esc(k.tip)}</div>`:""}
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
     <div class="actions">
       ${msgs.map(m=>`<button class="btn small" data-copy="${esc(m.text)}">複製${m.label?"「"+esc(m.label)+"」":"訊息"}</button>
       <a class="btn small line" href="https://line.me/R/msg/text/?${encodeURIComponent(m.text)}" target="_blank" rel="noopener">${m.label?"LINE「"+esc(m.label)+"」":"用 LINE 傳"}</a>`).join("")}
-      <button class="btn small" data-open="${k.c.id}">客戶資料</button>
       <button class="btn small primary" data-done="${esc(k.key)}">✓ 已聯絡</button>
     </div></article>`;
 }
@@ -549,12 +551,13 @@ function renderClient(id){
       <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button></div>
       ${fus.map(f=>{const steps=flow(f.type);const base=parseD(f.date);
         return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
+        ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動 7 天追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動 7 天追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
           if(st.silent) return `<span class="step rest" title="${esc(st.tip||"")}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()} 不傳</span>`;
           return `<button class="step ${done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title||fmtY(dd))}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()}</button>`}).join("")}</div>
         ${f.type==="deal"&&f.wait!==false?`<div class="detail">等待期</div><div class="steps">${state.settings.waitSteps.map(st=>{const k="wt:"+f.id+":"+st.day,dd=addDays(base,st.day),done=state.done[k];
           return `<button class="step ${done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title)}">${esc(st.title.replace("等待期結束",""))} ${fmtY(dd)}</button>`}).join("")}</div>`:""}
-        <div class="actions"><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`}).join("")||`<div class="empty">尚無追蹤紀錄</div>`}
+        <div class="actions">${f.type==="meet"?`<button class="btn small" data-track="${f.id}">停止追蹤</button>`:""}<button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`}`}).join("")||`<div class="empty">尚無追蹤紀錄</div>`}
     </section>
     <section class="section"><h2>保單</h2>
       <div class="actions"><button class="btn" id="addP">＋ 新增保單</button></div>
@@ -597,6 +600,7 @@ function renderClient(id){
   view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>followupSheet(id,b.dataset.addfu));
   view.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>policySheet(id,state.policies.find(p=>p.id===b.dataset.editp)));
   view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k])delete state.done[k];else state.done[k]=Date.now();save();renderClient(id);});
+  view.querySelectorAll("[data-track]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.track);f.track=!f.track;save();renderClient(id);toast(f.track?"已啟動 7 天追蹤":"已停止追蹤");});
   view.querySelectorAll("[data-delfu]").forEach(b=>b.onclick=()=>confirmSheet("刪除這筆追蹤？","",()=>{state.followups=state.followups.filter(f=>f.id!==b.dataset.delfu);save();renderClient(id);}));
   document.getElementById("delC").onclick=()=>confirmSheet("刪除「"+c.name+"」？","這位客戶的追蹤與保單資料都會一起刪除。",()=>{
     state.clients=state.clients.filter(x=>x.id!==id);state.followups=state.followups.filter(f=>f.clientId!==id);state.policies=state.policies.filter(p=>p.clientId!==id);
@@ -682,6 +686,7 @@ function renderSettings(){
 function bindCommon(){
   view.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(b.dataset.copy,"訊息已複製，可貼到 LINE"));
   view.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openClient=b.dataset.open;render();});
+  view.querySelectorAll("[data-card]").forEach(el=>el.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openClient=el.dataset.card;render();});
   view.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{state.done[b.dataset.done]=Date.now();save();render();toast("已標記完成");});
 }
 
@@ -723,7 +728,8 @@ function clientSheet(c){
         <div class="tagpick" id="tp">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="inline"><input id="newTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="addTag">加入</button></div></div>
       <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
-      ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶（啟動 7 天流程）</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option></select></div>
+      ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option></select></div>
+      <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 同時啟動見面後 7 天追蹤（單純見面取得資訊就不用勾）</label>
       <div class="field" id="itemF"><label for="item">商品名稱（可不填）</label><input id="item" placeholder="例：醫療險"></div>
       <div class="field" id="premF" hidden><label for="prem">保費</label><input id="prem" placeholder="例：年繳 36,000 元"></div>`:""}
       <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">儲存</button></div>
@@ -734,7 +740,7 @@ function clientSheet(c){
     const setStage=k=>sp.querySelectorAll("[data-stage]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.stage===k));
     const curStage=()=>{const b=sp.querySelector('[aria-pressed="true"]');return b?b.dataset.stage:"";};
     sp.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{setStage(b.dataset.stage);document.getElementById("spErr").textContent="";});
-    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const im=IMPLIED[nx.value]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";};
+    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const im=IMPLIED[nx.value]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";document.getElementById("trackF").hidden=nx.value!=="meet";};
     const tp=document.getElementById("tp");
     const bindTags=()=>tp.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
     bindTags();
@@ -758,7 +764,7 @@ function clientSheet(c){
       let id;
       if(isNew){id=uid();state.clients.push(Object.assign({id},data));
         if(nx&&nx.value){bumpStage(state.clients[state.clients.length-1],nx.value);} 
-        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:ymd(today()),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined});
+        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:ymd(today()),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined,track:nx.value==="meet"?document.getElementById("track").checked:undefined});
       }else{Object.assign(c,data);id=c.id;}
       save();closeSheet();openClient=id;render();toast(isNew?"已新增客戶":"已更新");
     };
@@ -771,7 +777,7 @@ function followupSheet(clientId,type){
       <div class="field"><label for="fi">商品名稱${type==="meet"?"（可不填）":""}</label><input id="fi" placeholder="例：實支實付醫療險"></div>
       ${type==="deal"?`<div class="field"><label for="fp">保費</label><input id="fp" placeholder="例：年繳 36,000 元"></div>`:""}
       <div class="field"><label for="fd">日期</label><input id="fd" type="date" value="${ymd(today())}"></div>
-      <p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息（可在設定修改）。</p>
+      ${type==="meet"?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 啟動 7 天追蹤（${steps.map(st=>dayLabel(st.day)).join("、")}提醒）</label><p class="note" style="margin:0">單純見面取得資訊就不用勾，只會記錄見面日期。</p>`:`<p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息（可在設定修改）。</p>`}
       ${type==="deal"?`<label class="inline" style="font-size:14px"><input type="checkbox" id="fw" checked style="width:auto"> 提醒等待期結束（${state.settings.waitSteps.map(st=>st.title.replace("等待期結束","")+" "+st.day+" 天").join("、")}）</label>`:""}
       <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">建立提醒</button></div>
     </form>`,()=>{
@@ -779,9 +785,10 @@ function followupSheet(clientId,type){
       const d=document.getElementById("fd").value; if(!d) return toast("請選擇日期");
       const fw=document.getElementById("fw");
       const fp=document.getElementById("fp");
-      state.followups.push({id:uid(),clientId,type,date:d,item:document.getElementById("fi").value.trim(),wait:fw?fw.checked:undefined,premium:fp?fp.value.trim():undefined});
+      state.followups.push({id:uid(),clientId,type,date:d,item:document.getElementById("fi").value.trim(),wait:fw?fw.checked:undefined,premium:fp?fp.value.trim():undefined,track:type==="meet"?document.getElementById("ftrack").checked:undefined});
       const cl=client(clientId), before=cl&&cl.stage; bumpStage(cl,type);
-      save();closeSheet();render();toast(cl&&cl.stage!==before?"已建立提醒，客戶升為 "+cl.stage+" 級":"已建立提醒");};
+      save();closeSheet();render();const what=type==="meet"&&!document.getElementById("ftrack")?.checked?"已記錄見面":"已建立提醒";
+      toast(cl&&cl.stage!==before?what+"，客戶升為 "+cl.stage+" 級":what);};
   });
 }
 function policySheet(clientId,p){
