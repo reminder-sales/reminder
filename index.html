@@ -113,6 +113,9 @@ textarea{resize:vertical}
 .task:active{filter:brightness(.97)}
 .nameinput{font-size:20px;font-weight:700;border:1px solid transparent;border-bottom:1px dashed var(--line);background:transparent;border-radius:6px 6px 0 0;padding:4px 6px;width:100%;min-width:0}
 .nameinput:hover,.nameinput:focus{border-color:var(--line);background:var(--bg)}
+.bdu{font-size:14px;gap:6px}
+.bdu input{width:auto!important}
+select:disabled{opacity:.45}
 .saved{font-size:12px;color:var(--muted);text-align:right}
 .pcard{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .pcard .hint{font-size:12px;color:var(--muted)}
@@ -514,7 +517,7 @@ function renderClients(){
     <section class="section">${list.length?list.map(c=>{
       const nP=state.policies.filter(p=>p.clientId===c.id).length;
       return `<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}" title="${STAGES[c.stage||"D"].label}">${c.stage||"D"}</span>
-        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>生日 ${esc((c.bday||"--").replace("-","/"))} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${tagsHTML(c)}</span></button>`;}).join(""):`<div class="empty">${q||tagFilter?"找不到符合的客戶":stageFilter?"這個階段還沒有客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`}</section>`;
+        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>${c.bdayUnknown?"不知道生日":"生日 "+esc((c.bday||"--").replace("-","/"))} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${tagsHTML(c)}</span></button>`;}).join(""):`<div class="empty">${q||tagFilter?"找不到符合的客戶":stageFilter?"這個階段還沒有客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`}</section>`;
   view.querySelectorAll("[data-sf]").forEach(b=>b.onclick=()=>{stageFilter=b.dataset.sf;renderClients();});
   view.querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>{tagFilter=tagFilter===b.dataset.tf?"":b.dataset.tf;renderClients();});
   const qi=document.getElementById("q");
@@ -537,9 +540,10 @@ function renderClient(id){
       <div class="field"><label>客戶階段</label>${stagePick("dStage",c.stage||"D")}
         ${c.stageAutoOn&&c.stage!=="A"?`<span class="hint">${fmtY(parseD(c.stageAutoOn))} 因成交滿半年自動調整</span>`:""}</div>
       <div class="field"><label>生日（只填月、日）</label>
-        <div class="inline"><select id="iBm" aria-label="月" style="flex:1"><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${(c.bday||"").slice(0,2)===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select>
-        <select id="iBd" aria-label="日" style="flex:1"><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${pad2(i+1)}" ${(c.bday||"").slice(3)===pad2(i+1)?"selected":""}>${i+1} 日</option>`).join("")}</select></div>
-        <span class="hint">${jump?"下次生日 "+fmt(bd)+"．跳歲日 "+fmtY(jump)+"（還有 "+diff(jump,t)+" 天）":"填了生日就會自動算跳歲日"}</span></div>
+        <div class="inline"><select id="iBm" aria-label="月" style="flex:1" ${c.bdayUnknown?"disabled":""}><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${(c.bday||"").slice(0,2)===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select>
+        <select id="iBd" aria-label="日" style="flex:1" ${c.bdayUnknown?"disabled":""}><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${pad2(i+1)}" ${(c.bday||"").slice(3)===pad2(i+1)?"selected":""}>${i+1} 日</option>`).join("")}</select></div>
+        <label class="inline bdu"><input type="checkbox" id="iBdu" ${c.bdayUnknown?"checked":""}> 不知道生日</label>
+        <span class="hint">${c.bdayUnknown?"還不知道生日，下次聯絡時記得問一下":jump?"下次生日 "+fmt(bd)+"．跳歲日 "+fmtY(jump)+"（還有 "+diff(jump,t)+" 天）":"填了生日就會自動算跳歲日"}</span></div>
       <div class="field"><label>標籤（點一下選取／取消）</label>
         <div class="tagpick" id="iTags">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="inline"><input id="iNewTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="iAddTag">加入</button></div></div>
@@ -581,7 +585,8 @@ function renderClient(id){
     if(!m&&!d){c.bday="";save();renderClient(id);savedMsg();return;}
     if(!m||!d) return;
     if(+d>new Date(2024,+m,0).getDate()){toast("這個月沒有 "+(+d)+" 日");return;}
-    c.bday=m+"-"+d;save();renderClient(id);savedMsg();};
+    c.bday=m+"-"+d;c.bdayUnknown=false;save();renderClient(id);savedMsg();};
+  document.getElementById("iBdu").onchange=e=>{c.bdayUnknown=e.target.checked; if(c.bdayUnknown) c.bday=""; save();renderClient(id);savedMsg();};
   const it=document.getElementById("iTags");
   const syncTags=()=>{c.tags=[...it.querySelectorAll('[aria-pressed="true"]')].map(b=>b.dataset.tag);save();savedMsg();};
   const bindT=()=>it.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>{b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true");syncTags();});
@@ -722,6 +727,7 @@ function clientSheet(c){
       <div class="field"><label>生日（只填月、日）</label>
         <div class="inline"><select id="bm" aria-label="月" style="flex:1"><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${bm===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select>
         <select id="bd" aria-label="日" style="flex:1"><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${pad2(i+1)}" ${bd===pad2(i+1)?"selected":""}>${i+1} 日</option>`).join("")}</select></div>
+        <label class="inline bdu"><input type="checkbox" id="bdu" ${c.bdayUnknown?"checked":""}> 不知道生日</label>
         <span class="hint">用來計算跳歲日，不需要年份。</span></div>
       <div class="field"><label>客戶階段（必選）</label>${stagePick("sp",isNew?"":c.stage||"D")}<span class="err" id="spErr"></span></div>
       <div class="field"><label>標籤（可複選）</label>
@@ -736,6 +742,9 @@ function clientSheet(c){
     </form>`,()=>{
     const cn=document.getElementById("cn");
     document.getElementById("mask").onclick=()=>{if(cn.value.trim()&&!MASK.test(cn.value))cn.value=autoMask(cn.value);};
+    const bdu=document.getElementById("bdu"), bmS=document.getElementById("bm"), bdS=document.getElementById("bd");
+    const syncBdu=()=>{bmS.disabled=bdS.disabled=bdu.checked; if(bdu.checked){bmS.value="";bdS.value="";}};
+    bdu.onchange=syncBdu; syncBdu();
     const sp=document.getElementById("sp");
     const setStage=k=>sp.querySelectorAll("[data-stage]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.stage===k));
     const curStage=()=>{const b=sp.querySelector('[aria-pressed="true"]');return b?b.dataset.stage:"";};
@@ -759,7 +768,7 @@ function clientSheet(c){
       if((m&&!d)||(!m&&d)){err.textContent="生日的月、日要一起填";return;}
       if(m&&d&&+d>new Date(2024,+m,0).getDate()){err.textContent="這個月沒有 "+(+d)+" 日";return;}
       const stage=curStage(); if(!stage){document.getElementById("spErr").textContent="請選擇客戶階段（A／B／C／D）";return;}
-      const data={name,stage,bday:m&&d?m+"-"+d:"",note:document.getElementById("cnote").value.trim(),
+      const data={name,stage,bday:m&&d?m+"-"+d:"",bdayUnknown:bdu.checked,note:document.getElementById("cnote").value.trim(),
         tags:[...tp.querySelectorAll('[data-tag][aria-pressed="true"]')].map(b=>b.dataset.tag)};
       let id;
       if(isNew){id=uid();state.clients.push(Object.assign({id},data));
