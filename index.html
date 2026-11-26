@@ -181,12 +181,12 @@ const DEFAULT_SETTINGS={
   riderLead:14,
   fundDays:12,
   dealSteps:[
-    {day:1,title:"整理這次買了什麼",tip:"把商品、保費、等待期寫清楚，客戶安心，也減少日後誤會。",tpl:"{name}您好，謝謝您的信任！幫您整理這次規劃的內容：\n・商品：{item}\n・保費：{premium}\n・等待期：{waits}{monthly}\n等待期過後保障就完整生效，到時候我會再提醒您。有任何問題隨時問我！"},
+    {day:1,title:"整理這次買了什麼",tip:"把商品、保費、等待期寫清楚，客戶安心，也減少日後誤會。",tpl:"{name}您好，恭喜您規劃了新的保障！幫您整理這次規劃的內容：\n・商品：{item}\n・保費：{premium}\n・等待期：{waits}{monthly}\n等待期過後保障就完整生效，到時候我會再提醒您。有任何問題隨時問我！"},
     {day:7,title:"查核保進度：有照會就主動聯絡，保單下來就約簽收",tip:"先查核保進度，再選一則傳：有照會就說明要補什麼；保單核發了就約時間簽收。",
      alts:[{label:"有照會",tpl:"{name}您好，保險公司那邊有一些資料想再跟您確認（照會內容：　　），我先幫您整理好需要準備的東西。方便的話我們約個時間處理，越快補件，保單就越快下來。"},
            {label:"約簽收",tpl:"{name}您好，好消息！您的{item}保單已經核發下來了，想約時間把保單送過去給您簽收，順便花 15 分鐘說明理賠怎麼申請。{next1}或{next2}哪天方便呢？"}]},
-    {day:30,title:"成交關懷"},
-    {day:90,title:"成交關懷"}
+    {day:30,title:"軟性關懷",tip:"不談保險，聊天氣、生活或他提過的事。",tpl:"{name}您好，最近天氣變化比較大，要多注意身體喔！最近有沒有去哪裡走走？"},
+    {day:90,title:"軟性關懷",tip:"不談保險，從他的標籤和筆記找話題。",tpl:"{name}您好，好一陣子沒聊了，最近好嗎？上次聽您說（他提過的事），後來怎麼樣了呢？"}
   ],
   waitSteps:[
     {day:30,title:"疾病等待期結束",tip:"讓客戶知道保障正式啟動，也提醒他有狀況先找你。",tpl:"{name}您好，跟您報告一個好消息：您的{item}從今天起已經過了 30 天的疾病等待期，之後因為疾病住院或手術都在保障範圍內了。有任何狀況隨時找我！"},
@@ -195,15 +195,16 @@ const DEFAULT_SETTINGS={
   ],
   meetSteps:[
     {day:0,title:"當天晚上：整理今天的三個重點",tip:"只寫他說的，不寫你要賣的。",tpl:"{name}您好，今天謝謝您撥時間！今天聊到的三個重點，我整理給您：\n1. \n2. \n3. "},
+    {day:1,title:"傳一個他沒問、但用得到的資訊",tip:"找一則跟他提過的事有關的新聞，附上連結一起傳。",tpl:"{name}您好，上次我們討論到這件事（他提過的事），這則新聞有提到，方向跟我們那天討論的差不多，你有空可以看看"},
     {day:2,silent:true,title:"什麼都不傳",tip:"讓他有時間想，也讓他發現你不急。",tpl:""},
-    {day:3,title:"傳一個他沒問、但用得到的資訊",tip:"從他提過的事找題材，例如小孩上學、出國、買房。",tpl:"{name}您好，上次您提到（他提過的事），這份資料我整理好了，您可以先存著。"},
-    {day:5,title:"問一個回一句話就好的問題",tip:"回得越短，越容易回。",tpl:"{name}您好，想請教一下，您比較在意的是保費，還是保障範圍呢？"},
-    {day:7,title:"約下次見面：給兩個時間",tip:"給兩個時間，不問要不要。",tpl:"{name}您好，我下週二（{tue}）、週四（{thu}）晚上都有空，哪天方便把剩下的聊完？"}
+    {day:3,silent:true,title:"什麼都不傳",tip:"讓他有時間想，也讓他發現你不急。",tpl:""},
+    {day:4,title:"問一個回一句話就好的問題",tip:"回得越短，越容易回。",tpl:"{name}您好，你看完那個新聞有什麼想法嗎？"},
+    {day:5,title:"安排約訪：給兩個時間",tip:"給兩個時間，不問要不要。",tpl:"{name}您好，我下週二（{tue}）、週四（{thu}）晚上都有空，哪天方便把剩下的聊完？"}
   ],
   proposalSteps:[
     {day:1,title:"確認收到，幫他抓重點",tip:"確認他看得懂，不催決定。把建議書濃縮成三句話。",tpl:"{name}您好，昨天的建議書我幫您整理成三個重點：\n1. 保障什麼：\n2. 每年保費：\n3. 跟您擔心的事有什麼關係：\n有看不懂的地方都可以直接問我。"},
     {day:2,title:"分享一個真實案例",tip:"用故事讓保障變具體，不要用數字壓人。案例記得去識別化。",tpl:"{name}您好，分享一個之前客戶的經驗，狀況跟您關心的很像，給您參考：\n（案例）"},
-    {day:3,title:"先回答他不好意思問的問題",tip:"挑一個常見疑問主動說明，例如繳不出來怎麼辦、可不可以只保一部分。",tpl:"{name}您好，很多人看建議書時都會想問：「如果中間繳不出來怎麼辦？」我先幫您整理好答案：\n（說明）"},
+    {day:3,title:"分享一則新聞",tip:"找一則跟他提過的事有關的新聞，附上連結一起傳。",tpl:"{name}您好，上次我們討論到的事（他提過的事），這則新聞有提到，方向跟我們那天討論的差不多，你有空可以看看"},
     {day:4,title:"問一個回一句話就好的問題",tip:"給選項，回得越短越容易回。",tpl:"{name}您好，想請教一下，看完建議書，您覺得最需要再調整的是保費、保額，還是繳費年期？"},
     {day:5,title:"約時間定案：給兩個時間",tip:"給兩個時間，不問要不要。只要 10 分鐘，降低壓力。",tpl:"{name}您好，建議書如果有想調整的地方，我們可以一起確認。{next1}或{next2}晚上，哪天方便給我 10 分鐘？"}
   ],
@@ -232,6 +233,17 @@ function load(){
   s.settings.tpl=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS.tpl),(s.settings&&s.settings.tpl)||{});
   s.done=s.done||{};
   s.opps=s.opps||[];
+  /* v2 訊息更新：見面後追蹤、建議書第 3 天、成交第 1／30／90 天 */
+  if((s.settings.msgVer||1)<2){
+    s.settings.meetSteps=structuredCloneSafe(DEFAULT_SETTINGS.meetSteps);
+    const ps=(s.settings.proposalSteps||[]), i3=ps.findIndex(x=>x.title==="先回答他不好意思問的問題");
+    if(i3>=0) ps[i3]=structuredCloneSafe(DEFAULT_SETTINGS.proposalSteps.find(x=>x.day===3));
+    for(const st of (s.settings.dealSteps||[])){
+      if(st.tpl) st.tpl=st.tpl.replace("謝謝您的信任！幫您整理","恭喜您規劃了新的保障！幫您整理");
+      if((st.day===30||st.day===90)&&!st.tpl){const d=DEFAULT_SETTINGS.dealSteps.find(x=>x.day===st.day);Object.assign(st,structuredCloneSafe(d));}
+    }
+    s.settings.msgVer=2;
+  }
   /* 舊設定升級：成交第 1 天訊息加入月配息、基金進場訊息加入金額 */
   if(s.settings.tpl.fund==="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。之後每月配息入帳的時間和查詢方式，我再整理給您，有任何問題隨時問我！") s.settings.tpl.fund="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給您，有任何問題隨時問我！";
   const d1=(s.settings.dealSteps||[]).find(x=>x.day===1);
@@ -349,7 +361,7 @@ function buildTasks(){
   const grace=addDays(t,-30);
   for(const f of state.followups){
     const c=client(f.clientId); if(!c) continue;
-    if(f.type==="meet"&&!f.track) continue;  /* 單純見面只記錄，不啟動 7 天追蹤 */
+    if(f.type==="meet"&&!f.track) continue;  /* 單純見面只記錄，不啟動見面後追蹤 */
     const steps=flow(f.type).filter(st=>!st.silent);
     const base=parseD(f.date);
     steps.forEach((st,i)=>{
@@ -609,7 +621,7 @@ function renderClient(id){
       <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button></div>
       ${fus.map(f=>{const steps=flow(f.type);const base=parseD(f.date);
         return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
-        ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動 7 天追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動 7 天追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
+        ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
           if(st.silent) return `<span class="step rest" title="${esc(st.tip||"")}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()} 不傳</span>`;
           return `<button class="step ${done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title||fmtY(dd))}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()}</button>`}).join("")}</div>
@@ -666,7 +678,7 @@ function renderClient(id){
   view.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>policySheet(id,state.policies.find(p=>p.id===b.dataset.editp)));
   view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k])delete state.done[k];else state.done[k]=Date.now();save();renderClient(id);});
   view.querySelectorAll("[data-sign]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.sign);f.signDate=i.value;save();renderClient(id);toast(i.value?"已存簽收日":"已清除簽收日");});
-  view.querySelectorAll("[data-track]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.track);f.track=!f.track;save();renderClient(id);toast(f.track?"已啟動 7 天追蹤":"已停止追蹤");});
+  view.querySelectorAll("[data-track]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.track);f.track=!f.track;save();renderClient(id);toast(f.track?"已啟動見面後追蹤":"已停止追蹤");});
   view.querySelectorAll("[data-delfu]").forEach(b=>b.onclick=()=>confirmSheet("刪除這筆追蹤？","",()=>{state.followups=state.followups.filter(f=>f.id!==b.dataset.delfu);save();renderClient(id);}));
   document.getElementById("delC").onclick=()=>confirmSheet("刪除「"+c.name+"」？","這位客戶的追蹤與保單資料都會一起刪除。",()=>{
     state.clients=state.clients.filter(x=>x.id!==id);state.followups=state.followups.filter(f=>f.clientId!==id);state.policies=state.policies.filter(p=>p.clientId!==id);
@@ -695,8 +707,8 @@ function renderSettings(){
         <div class="inline"><label for="pd_${i}">第</label><input id="pd_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
         <span class="hint">${esc(st.tip||"")}</span>
         <textarea id="pt_${i}" rows="4" aria-label="第${st.day}天訊息">${esc(st.tpl)}</textarea></div>`).join("")}
-      <h2>見完客戶的 7 天流程</h2>
-      <p class="note" style="margin:0">七天裡，只有最後一則在約他；前面幾則都在讓他覺得你值得再見一次。可用代碼：{tue}{thu} 自動帶入下週二、週四的日期。</p>
+      <h2>見完客戶的追蹤流程（有激發興趣才啟動）</h2>
+      <p class="note" style="margin:0">只有最後一則在約他；前面幾則都在讓他覺得你值得再見一次。可用代碼：{tue}{thu} 自動帶入下週二、週四的日期。</p>
       ${S.meetSteps.map((st,i)=>`<div class="stepedit">
         <div class="inline"><label for="md_${i}">第</label><input id="md_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
         <span class="hint">${esc(st.tip||"")}</span>
@@ -799,7 +811,7 @@ function clientSheet(c){
       <div class="field"><label for="copp">商機（可不填）</label><textarea id="copp" rows="2" placeholder="例：明年想換車、孩子要出國念書"></textarea></div>
       <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
       ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option></select></div>
-      <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 同時啟動見面後 7 天追蹤（單純見面取得資訊就不用勾）</label>
+      <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 有激發興趣，啟動見面後追蹤（單純見面取得資訊就不用勾）</label>
       <div class="field" id="itemF"><label for="item">商品名稱（可不填）</label><input id="item" placeholder="例：醫療險"></div>
       <div class="field" id="premF" hidden><label for="prem">保費</label><input id="prem" placeholder="例：年繳 36,000 元"></div>
       <div id="dealF" hidden>${dealOptsHTML("n")}</div>`:""}
@@ -852,7 +864,7 @@ function followupSheet(clientId,type){
       <div class="field"><label for="fi">商品名稱${type==="meet"?"（可不填）":""}</label><input id="fi" placeholder="例：實支實付醫療險"></div>
       ${type==="deal"?`<div class="field"><label for="fp">保費</label><input id="fp" placeholder="例：年繳 36,000 元"></div>`:""}
       <div class="field"><label for="fd">日期</label><input id="fd" type="date" value="${ymd(today())}"></div>
-      ${type==="meet"?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 啟動 7 天追蹤（${steps.map(st=>dayLabel(st.day)).join("、")}提醒）</label><p class="note" style="margin:0">單純見面取得資訊就不用勾，只會記錄見面日期。</p>`:`<p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息（可在設定修改）。</p>`}
+      ${type==="meet"?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 有激發興趣，啟動見面後追蹤（${steps.map(st=>dayLabel(st.day)).join("、")}提醒）</label><p class="note" style="margin:0">單純見面取得資訊就不用勾，只會記錄見面日期。</p>`:`<p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息（可在設定修改）。</p>`}
       ${type==="deal"?dealOptsHTML("f"):""}
       <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">建立提醒</button></div>
     </form>`,()=>{
