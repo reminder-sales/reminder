@@ -117,6 +117,7 @@ textarea{resize:vertical}
 .bdu input{width:auto!important}
 select:disabled{opacity:.45}
 .checks{display:flex;flex-direction:column;gap:8px}
+.client .meta .oppline{display:block;font-size:12px;color:var(--c-anni);font-weight:700}
 .saved{font-size:12px;color:var(--muted);text-align:right}
 .pcard{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .pcard .hint{font-size:12px;color:var(--muted)}
@@ -465,6 +466,7 @@ function taskHTML(k){
     <div class="row1"><span class="chip">${ty.label}</span>${stageHTML(k.c)}<span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span><span class="go" aria-hidden="true">›</span></div>
     <div class="detail">${esc(k.detail)}</div>
     ${k.tip?`<div class="tip"><b>訣竅</b>　${esc(k.tip)}</div>`:""}
+    ${k.c.opp?`<div class="detail" style="color:var(--c-anni);font-weight:700">商機：${esc(k.c.opp)}</div>`:""}
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
     <div class="actions">
       ${msgs.map(m=>`<button class="btn small" data-copy="${esc(m.text)}">複製${m.label?"「"+esc(m.label)+"」":"訊息"}</button>
@@ -540,23 +542,39 @@ function renderOpps(){
   view.querySelectorAll("[data-odel]").forEach(b=>b.onclick=()=>confirmSheet("刪除這筆商機？","",()=>{state.opps=state.opps.filter(x=>x.id!==b.dataset.odel);save();render();}));
   bindCommon();
 }
+function clientMatches(c,q){
+  if(!q) return true;
+  return [c.name,c.note,c.opp,...(c.tags||[])].some(x=>(x||"").includes(q));
+}
 function renderClients(){
-  const q=query.trim();
-  const list=state.clients.filter(c=>(!q||c.name.includes(q)||(c.note||"").includes(q)||(c.tags||[]).some(x=>x.includes(q)))&&(!tagFilter||(c.tags||[]).includes(tagFilter))&&(!stageFilter||(c.stage||"D")===stageFilter)).sort((a,b)=>STAGE_RANK[b.stage||"D"]-STAGE_RANK[a.stage||"D"]||a.name.localeCompare(b.name,"zh-Hant"));
   view.innerHTML=`
-    <input class="search" id="q" type="search" placeholder="搜尋客戶、筆記或標籤" value="${esc(query)}">
+    <input class="search" id="q" type="search" placeholder="搜尋客戶、筆記、商機或標籤" value="${esc(query)}" autocomplete="off">
     <div class="seg" id="sf" style="flex-wrap:wrap"><button data-sf="" aria-pressed="${!stageFilter}">全部 ${state.clients.length}</button>${Object.keys(STAGES).map(k=>`<button data-sf="${k}" aria-pressed="${k===stageFilter}" title="${STAGES[k].label}">${k} 級 ${state.clients.filter(c=>(c.stage||"D")===k).length}</button>`).join("")}</div>
     <div class="tagpick" id="tf">${state.settings.tags.map(x=>`<button data-tf="${esc(x)}" aria-pressed="${x===tagFilter}">${esc(x)} <small>${state.clients.filter(c=>(c.tags||[]).includes(x)).length}</small></button>`).join("")}</div>
-    <h2>客戶 <span class="count">${list.length}</span></h2>
-    <section class="section">${list.length?list.map(c=>{
-      const nP=state.policies.filter(p=>p.clientId===c.id).length;
-      return `<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}" title="${STAGES[c.stage||"D"].label}">${c.stage||"D"}</span>
-        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>${c.bdayUnknown?"不知道生日":"生日 "+esc((c.bday||"--").replace("-","/"))} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${tagsHTML(c)}</span></button>`;}).join(""):`<div class="empty">${q||tagFilter?"找不到符合的客戶":stageFilter?"這個階段還沒有客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`}</section>`;
+    <div id="clist" class="section"></div>`;
   view.querySelectorAll("[data-sf]").forEach(b=>b.onclick=()=>{stageFilter=b.dataset.sf;renderClients();});
   view.querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>{tagFilter=tagFilter===b.dataset.tf?"":b.dataset.tf;renderClients();});
   const qi=document.getElementById("q");
-  qi.oninput=()=>{query=qi.value;const pos=qi.selectionStart;renderClients();const n=document.getElementById("q");n.focus();n.setSelectionRange(pos,pos);};
-  bindCommon();
+  /* 注音／拼音選字中不更新，避免把還沒選字的注音送出 */
+  qi.addEventListener("input",e=>{if(e.isComposing) return; query=qi.value; renderClientList();});
+  qi.addEventListener("compositionend",()=>{query=qi.value; renderClientList();});
+  renderClientList();
+}
+function renderClientList(){
+  const q=query.trim(), box=document.getElementById("clist"); if(!box) return;
+  const list=state.clients.filter(c=>clientMatches(c,q)&&(!tagFilter||(c.tags||[]).includes(tagFilter))&&(!stageFilter||(c.stage||"D")===stageFilter))
+    .sort((a,b)=>STAGE_RANK[b.stage||"D"]-STAGE_RANK[a.stage||"D"]||a.name.localeCompare(b.name,"zh-Hant"));
+  const filtered=stageFilter||tagFilter;
+  const hidden=filtered&&q?state.clients.filter(c=>clientMatches(c,q)).length-list.length:0;
+  box.innerHTML=`<h2>客戶 <span class="count">${list.length}</span></h2>
+    ${list.map(c=>{
+      const nP=state.policies.filter(p=>p.clientId===c.id).length;
+      return `<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}" title="${STAGES[c.stage||"D"].label}">${c.stage||"D"}</span>
+        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>${c.bdayUnknown?"不知道生日":"生日 "+esc((c.bday||"--").replace("-","/"))} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${c.opp?`<span class="oppline">商機：${esc(c.opp)}</span>`:""}${tagsHTML(c)}</span></button>`;}).join("")}
+    ${!list.length?`<div class="empty">${q||filtered?"找不到符合的客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`:""}
+    ${hidden>0?`<div class="banner"><span>另有 <b>${hidden}</b> 位符合搜尋，但被上方的篩選條件擋住了</span><button class="btn small" id="clrF">清除篩選</button></div>`:""}`;
+  const cf=document.getElementById("clrF"); if(cf) cf.onclick=()=>{stageFilter="";tagFilter="";renderClients();};
+  box.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openClient=b.dataset.open;render();});
 }
 function renderClient(id){
   const c=client(id); if(!c){openClient=null;return render();}
@@ -583,6 +601,8 @@ function renderClient(id){
         <div class="inline"><input id="iNewTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="iAddTag">加入</button></div></div>
       <div class="field"><label for="iNote">客戶筆記</label><textarea id="iNote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea>
         <span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
+      <div class="field"><label for="iOpp">商機</label><textarea id="iOpp" rows="2" placeholder="例：明年想換車、孩子要出國念書、考慮買房">${esc(c.opp||"")}</textarea>
+        <span class="hint">記下這位客戶可能的需求或想推的商品，搜尋也找得到。</span></div>
       <div class="saved" id="iSaved">直接修改，會自動儲存</div>
     </div>
     <section class="section"><div class="inline" style="justify-content:space-between"><h2>追蹤流程</h2></div>
@@ -636,6 +656,9 @@ function renderClient(id){
     syncTags();};
   const nt=document.getElementById("iNote"); let ntT;
   nt.oninput=()=>{clearTimeout(ntT);document.getElementById("iSaved").textContent="儲存中…";ntT=setTimeout(()=>{c.note=nt.value.trim();save();savedMsg();},500);};
+  const op=document.getElementById("iOpp"); let opT;
+  op.oninput=()=>{clearTimeout(opT);document.getElementById("iSaved").textContent="儲存中…";opT=setTimeout(()=>{c.opp=op.value.trim();save();savedMsg();},500);};
+  op.onblur=()=>{clearTimeout(opT);if((c.opp||"")!==op.value.trim()){c.opp=op.value.trim();save();savedMsg();}};
   nt.onblur=()=>{clearTimeout(ntT);if(c.note!==nt.value.trim()){c.note=nt.value.trim();save();savedMsg();}};
   view.querySelectorAll("#dStage [data-stage]").forEach(b=>b.onclick=()=>{c.stage=b.dataset.stage;save();renderClient(id);toast("已改為 "+c.stage+" 級");});
   document.getElementById("addP").onclick=()=>policySheet(id);
@@ -773,6 +796,7 @@ function clientSheet(c){
       <div class="field"><label>標籤（可複選）</label>
         <div class="tagpick" id="tp">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="inline"><input id="newTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="addTag">加入</button></div></div>
+      <div class="field"><label for="copp">商機（可不填）</label><textarea id="copp" rows="2" placeholder="例：明年想換車、孩子要出國念書"></textarea></div>
       <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
       ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option></select></div>
       <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 同時啟動見面後 7 天追蹤（單純見面取得資訊就不用勾）</label>
@@ -810,7 +834,7 @@ function clientSheet(c){
       if((m&&!d)||(!m&&d)){err.textContent="生日的月、日要一起填";return;}
       if(m&&d&&+d>new Date(2024,+m,0).getDate()){err.textContent="這個月沒有 "+(+d)+" 日";return;}
       const stage=curStage(); if(!stage){document.getElementById("spErr").textContent="請選擇客戶階段（A／B／C／D）";return;}
-      const data={name,stage,bday:m&&d?m+"-"+d:"",bdayUnknown:bdu.checked,note:document.getElementById("cnote").value.trim(),
+      const data={name,stage,bday:m&&d?m+"-"+d:"",bdayUnknown:bdu.checked,note:document.getElementById("cnote").value.trim(),opp:document.getElementById("copp")?document.getElementById("copp").value.trim():(c.opp||""),
         tags:[...tp.querySelectorAll('[data-tag][aria-pressed="true"]')].map(b=>b.dataset.tag)};
       let id;
       if(isNew){id=uid();state.clients.push(Object.assign({id},data));
