@@ -1,0 +1,566 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
+<title>業務客戶提醒本</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="客戶提醒">
+<meta name="theme-color" content="#0F6B5C">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 單欄手機 app — 頂部標題、可捲動內容、底部分頁列；表單以底部抽屜開啟 */
+:root{
+  --bg:#EEF2F0; --surface:#FFFFFF; --ink:#16302A; --muted:#5A6D67; --line:#D8E1DD;
+  --accent:#0F6B5C; --accent-ink:#FFFFFF; --accent-soft:#DCEDE8;
+  --c-prop:#2F5DA8; --c-deal:#0F7A55; --c-anni:#A86200; --c-age:#6A4C9C; --c-rider:#B3362B;
+  --warn-bg:#FBEDEA;
+  --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
+  --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1715; --surface:#17221F; --ink:#E4EEEA; --muted:#97AAA4; --line:#2A3833;
+  --accent:#4CC2A8; --accent-ink:#06231C; --accent-soft:#1D3A33;
+  --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C;
+  --warn-bg:#3A2220; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0F1715; --surface:#17221F; --ink:#E4EEEA; --muted:#97AAA4; --line:#2A3833;
+  --accent:#4CC2A8; --accent-ink:#06231C; --accent-soft:#1D3A33;
+  --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C;
+  --warn-bg:#3A2220; color-scheme:dark;}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-tap-highlight-color:transparent}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+.brand{font-family:var(--f-display);font-size:20px;letter-spacing:.04em}
+.brand small{display:block;font-family:var(--f-body);font-size:12px;color:var(--muted);letter-spacing:0;font-weight:400}
+.datebox{text-align:right;font-family:var(--f-num);font-size:13px;color:var(--muted)}
+main{padding-bottom:calc(96px + env(safe-area-inset-bottom,0px))}
+main .wrap{display:flex;flex-direction:column;gap:18px;padding-block:16px}
+h2{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin:0;display:flex;align-items:center;gap:8px}
+h2 .count{font-family:var(--f-num);background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:0 8px;font-size:12px}
+.section{display:flex;flex-direction:column;gap:10px}
+.summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.sum{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
+.sum b{display:block;font-family:var(--f-num);font-size:20px;line-height:1.2}
+.sum span{font-size:11px;color:var(--muted)}
+.task{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--tc);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.task.overdue{background:var(--warn-bg)}
+.task .row1{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{font-size:12px;font-weight:700;color:var(--tc);border:1px solid var(--tc);border-radius:6px;padding:0 6px;white-space:nowrap}
+.task .who{font-weight:700;font-size:16px}
+.task .when{margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted);white-space:nowrap}
+.task .detail{font-size:13px;color:var(--muted)}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 12px;font-size:14px;display:inline-flex;align-items:center;gap:4px;text-decoration:none;color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn.line{color:#06C755;border-color:#06C755}
+.btn.danger{color:var(--c-rider);border-color:var(--c-rider)}
+.btn.small{padding:3px 10px;font-size:13px}
+.empty{background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:14px}
+.seg{display:flex;gap:6px}
+.seg button{border:1px solid var(--line);background:var(--surface);border-radius:16px;padding:3px 12px;font-size:13px}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.search{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 12px}
+.client{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;text-align:left;width:100%}
+.avatar{width:40px;height:40px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700;flex:none}
+.client .meta{min-width:0;flex:1}
+.client .meta b{display:block;font-size:16px}
+.client .meta span{font-size:12px;color:var(--muted)}
+.tag{font-size:11px;background:var(--line);color:var(--muted);border-radius:4px;padding:0 5px;margin-left:6px;font-weight:400}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.kv dt{color:var(--muted)} .kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.steps{display:flex;flex-wrap:wrap;gap:6px}
+.step{font-family:var(--f-num);font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px 8px;background:var(--surface)}
+.step.done{background:var(--accent-soft);color:var(--accent);border-color:transparent;text-decoration:line-through}
+.step.due{border-color:var(--c-rider);color:var(--c-rider)}
+.backlink{background:none;border:none;color:var(--accent);padding:0;font-size:14px;align-self:flex-start}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);z-index:6;padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs .wrap{display:grid;grid-template-columns:1fr 1fr auto 1fr 1fr;align-items:center;gap:4px;padding-block:6px}
+nav.tabs button.tab{background:none;border:none;display:flex;flex-direction:column;align-items:center;font-size:12px;color:var(--muted);padding:4px 0;gap:2px}
+nav.tabs button.tab svg{width:22px;height:22px}
+nav.tabs button.tab[aria-current="page"]{color:var(--accent);font-weight:700}
+.fab{width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--accent-ink);border:none;font-size:30px;line-height:1;margin-top:-22px;box-shadow:0 4px 14px rgb(0 0 0 / .2)}
+.sheet-bg{position:fixed;inset:0;background:rgb(0 0 0 / .4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.sheet h3{margin:0;font-family:var(--f-display);font-size:19px}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:13px;font-weight:700}
+.field .hint{font-size:12px;color:var(--muted)}
+.field .err{font-size:12px;color:var(--c-rider)}
+.field input,.field select,.field textarea{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px;width:100%;min-width:0}
+.inline{display:flex;gap:8px;align-items:center}
+.inline > *{min-width:0}
+.sheet .actions{justify-content:flex-end}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:14px;z-index:30}
+.note{font-size:13px;color:var(--muted);line-height:1.6}
+.banner{background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+textarea{resize:vertical}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .2s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
+</style>
+
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand">客戶提醒本<small>見完客戶，隨手記一筆</small></div>
+  <div class="datebox" id="todayLabel"></div>
+</div></header>
+
+<main><div class="wrap" id="view"></div></main>
+
+<nav class="tabs"><div class="wrap">
+  <button class="tab" data-tab="today" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4"/></svg>今日</button>
+  <button class="tab" data-tab="upcoming"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>即將</button>
+  <button class="fab" id="fab" aria-label="新增客戶">+</button>
+  <button class="tab" data-tab="clients"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M17 11a3 3 0 1 0 0-6M22 21c0-3-2-5-5-5.5"/></svg>客戶</button>
+  <button class="tab" data-tab="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>設定</button>
+</div></nav>
+
+<div id="sheetRoot"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- 儲存（只存在這支手機的瀏覽器裡） ---------- */
+const KEY="agentReminder.v1";
+const DEFAULT_SETTINGS={
+  proposalDays:[1,3,7,14],
+  dealDays:[1,7,30,90],
+  anniLead:30,
+  ageLead:30,
+  riderLead:14,
+  tpl:{
+    proposal:"{name}您好，前幾天跟您討論的{item}建議書，不知道您看過了嗎？有任何問題都可以隨時問我喔！",
+    deal:"{name}您好，謝謝您的信任！{item}已經在處理中，之後有任何需要都可以找我，祝您一切順心。",
+    anni:"{name}您好，您的{item}即將在{date}滿週年，想跟您約個時間一起檢視保障是否還符合需求。",
+    age:"{name}您好，提醒您保險年齡將在{date}增加一歲，若有規劃中的保障，在這之前投保保費會比較划算喔！",
+    rider:"{name}您好，您的{item}當初有{kind}，目前已符合可以申請複查的時間，想跟您約時間準備資料，看看能不能取消。"
+  }
+};
+let state=load();
+function blank(){return{clients:[],followups:[],policies:[],done:{},settings:structuredCloneSafe(DEFAULT_SETTINGS),seeded:false}}
+function structuredCloneSafe(o){return JSON.parse(JSON.stringify(o))}
+function load(){
+  let s=null;
+  try{const raw=localStorage.getItem(KEY); if(raw) s=JSON.parse(raw);}catch(e){}
+  if(!s){s=blank(); seed(s);}
+  s.settings=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS),s.settings||{});
+  s.settings.tpl=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS.tpl),(s.settings&&s.settings.tpl)||{});
+  s.done=s.done||{};
+  return s;
+}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("無法儲存：瀏覽器封鎖了本機儲存");}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+
+/* ---------- 日期工具 ---------- */
+const WD="日一二三四五六";
+function today(){const d=new Date();d.setHours(0,0,0,0);return d}
+function parseD(s){const [y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)}
+function ymd(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+function addDays(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x}
+function diff(a,b){return Math.round((a-b)/86400000)}
+function fmt(d){return (d.getMonth()+1)+"/"+d.getDate()+"（"+WD[d.getDay()]+"）"}
+function fmtY(d){return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate()}
+function clampDate(y,m,d){const last=new Date(y,m+1,0).getDate();return new Date(y,m,Math.min(d,last))}
+/* 跳歲日 = 生日 + 6 個月（保險年齡以足歲計，超過 6 個月加 1 歲） */
+function nextAgeJump(bday,from){
+  const [m,d]=bday.split("-").map(Number);
+  for(let y=from.getFullYear()-1;y<=from.getFullYear()+1;y++){
+    let mm=m-1+6, yy=y; if(mm>11){mm-=12;yy++;}
+    const j=clampDate(yy,mm,d);
+    if(j>=from) return j;
+  }
+}
+function nextBirthday(bday,from){
+  const [m,d]=bday.split("-").map(Number);
+  for(let y=from.getFullYear();y<=from.getFullYear()+1;y++){const b=clampDate(y,m-1,d); if(b>=from) return b;}
+}
+function nextAnniversary(eff,from){
+  const e=parseD(eff);
+  for(let y=Math.max(e.getFullYear()+1,from.getFullYear()-1);y<=from.getFullYear()+2;y++){
+    const a=clampDate(y,e.getMonth(),e.getDate()); if(a>=from) return a;
+  }
+}
+
+/* ---------- 範例資料（首次開啟） ---------- */
+function seed(s){
+  const t=today();
+  const c1={id:uid(),name:"陳Ｏ華",bday:pad2(t.getMonth()+1)+"-"+pad2(Math.min(t.getDate(),28)),note:"喜歡下午聯絡，有兩個小孩",example:true};
+  const jb=addDays(t,20); const back=new Date(jb); back.setMonth(back.getMonth()-6);
+  const c2={id:uid(),name:"林Ｏ婷",bday:pad2(back.getMonth()+1)+"-"+pad2(back.getDate()),note:"考慮醫療險升級",example:true};
+  const c3={id:uid(),name:"王ＯＯ",bday:"03-15",note:"公司主管，重視退休規劃",example:true};
+  s.clients.push(c1,c2,c3);
+  s.followups.push({id:uid(),clientId:c2.id,type:"proposal",date:ymd(addDays(t,-3)),item:"實支實付醫療險"});
+  s.followups.push({id:uid(),clientId:c3.id,type:"deal",date:ymd(addDays(t,-7)),item:"利變型終身壽險"});
+  const eff=addDays(t,18); eff.setFullYear(eff.getFullYear()-2);
+  s.policies.push({id:uid(),clientId:c1.id,name:"定期壽險",eff:ymd(eff),rider:"none",reviewDate:"",note:""});
+  const eff2=addDays(t,-370);
+  s.policies.push({id:uid(),clientId:c3.id,name:"重大傷病險",eff:ymd(eff2),rider:"loading",reviewDate:ymd(addDays(t,5)),note:"血壓偏高加費，一年後可附健檢報告申請複查"});
+  s.seeded=true;
+}
+function pad2(n){return String(n).padStart(2,"0")}
+
+/* ---------- 產生提醒 ---------- */
+const TYPES={
+  proposal:{label:"建議書追蹤",color:"var(--c-prop)"},
+  deal:{label:"成交關懷",color:"var(--c-deal)"},
+  anni:{label:"保單週年",color:"var(--c-anni)"},
+  age:{label:"跳歲提醒",color:"var(--c-age)"},
+  rider:{label:"批註/加費",color:"var(--c-rider)"}
+};
+const RIDER={none:"無",exclusion:"批註（除外責任）",loading:"加費",both:"批註＋加費"};
+function client(id){return state.clients.find(c=>c.id===id)}
+function buildTasks(){
+  const t=today(), S=state.settings, out=[];
+  const grace=addDays(t,-30);
+  for(const f of state.followups){
+    const c=client(f.clientId); if(!c) continue;
+    const days=f.type==="proposal"?S.proposalDays:S.dealDays;
+    const base=parseD(f.date);
+    days.forEach((n,i)=>{
+      const key="fu:"+f.id+":"+n; if(state.done[key]) return;
+      const due=addDays(base,n);
+      out.push({key,type:f.type,c,due,target:due,item:f.item,
+        detail:(f.type==="proposal"?"給建議書":"成交")+"後第 "+n+" 天（第 "+(i+1)+"/"+days.length+" 次）· "+(f.item||"")});
+    });
+  }
+  for(const p of state.policies){
+    const c=client(p.clientId); if(!c) continue;
+    const a=nextAnniversary(p.eff,grace);
+    if(a){const key="an:"+p.id+":"+ymd(a);
+      if(!state.done[key]) out.push({key,type:"anni",c,due:addDays(a,-S.anniLead),target:a,item:p.name,detail:p.name+" · "+fmtY(a)+" 滿 "+(a.getFullYear()-parseD(p.eff).getFullYear())+" 週年"});}
+    if(p.rider&&p.rider!=="none"&&p.reviewDate){
+      const key="rd:"+p.id+":"+p.reviewDate;
+      if(!state.done[key]){const r=parseD(p.reviewDate);
+        out.push({key,type:"rider",c,due:addDays(r,-S.riderLead),target:r,item:p.name,kind:RIDER[p.rider],detail:p.name+" · "+RIDER[p.rider]+" · "+fmtY(r)+" 可申請複查"+(p.note?" · "+p.note:"")});}
+    }
+  }
+  for(const c of state.clients){
+    if(!c.bday) continue;
+    const j=nextAgeJump(c.bday,grace); if(!j) continue;
+    const key="ag:"+c.id+":"+ymd(j); if(state.done[key]) continue;
+    out.push({key,type:"age",c,due:addDays(j,-S.ageLead),target:j,detail:"生日 "+c.bday.replace("-","/")+" · "+fmtY(j)+" 保險年齡 +1"});
+  }
+  out.sort((a,b)=>a.due-b.due);
+  return out;
+}
+function message(task){
+  const tpl=state.settings.tpl[task.type]||"";
+  return tpl.replaceAll("{name}",task.c.name).replaceAll("{item}",task.item||"保單")
+    .replaceAll("{date}",fmtY(task.target)).replaceAll("{kind}",task.kind||"");
+}
+
+/* ---------- 畫面 ---------- */
+const view=document.getElementById("view");
+let tab="today", range=30, query="", openClient=null;
+function esc(s){return String(s??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}
+function render(){
+  const t=today();
+  document.getElementById("todayLabel").innerHTML=esc(fmtY(t))+"<br>星期"+WD[t.getDay()];
+  document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab&&!openClient?"page":"false"));
+  if(openClient) return renderClient(openClient);
+  ({today:renderToday,upcoming:renderUpcoming,clients:renderClients,settings:renderSettings})[tab]();
+  window.scrollTo(0,0);
+}
+function taskHTML(k){
+  const t=today(), ty=TYPES[k.type], d=diff(k.due,t), dt=diff(k.target,t);
+  const isFu=k.type==="proposal"||k.type==="deal";
+  const late=isFu?d<0:dt<0;
+  let when;
+  if(isFu) when=d<0?"逾期 "+(-d)+" 天":d===0?"今天":fmt(k.due);
+  else when=dt<0?"已過 "+(-dt)+" 天":dt===0?"就是今天":(d<=0?"":"提醒 "+fmt(k.due)+" · ")+"還有 "+dt+" 天";
+  const msg=message(k);
+  return `<article class="task ${late?"overdue":""}" style="--tc:${ty.color}">
+    <div class="row1"><span class="chip">${ty.label}</span><span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span></div>
+    <div class="detail">${esc(k.detail)}</div>
+    <div class="actions">
+      <button class="btn small" data-copy="${esc(msg)}">複製訊息</button>
+      <a class="btn small line" href="https://line.me/R/msg/text/?${encodeURIComponent(msg)}" target="_blank" rel="noopener">用 LINE 傳</a>
+      <button class="btn small" data-open="${k.c.id}">客戶資料</button>
+      <button class="btn small primary" data-done="${esc(k.key)}">✓ 已聯絡</button>
+    </div></article>`;
+}
+function renderToday(){
+  const t=today(), all=buildTasks();
+  const due=all.filter(k=>k.due<=t);
+  const counts={}; for(const k of due) counts[k.type]=(counts[k.type]||0)+1;
+  const SHORT={proposal:"建議書",deal:"成交",anni:"週年",age:"跳歲",rider:"批註加費"};
+  const sum=Object.entries(TYPES).map(([k,v])=>`<div class="sum" style="color:${v.color}"><b>${counts[k]||0}</b><span>${SHORT[k]}</span></div>`).join("");
+  view.innerHTML=`
+    ${state.seeded?`<div class="banner"><span>目前顯示的是<b>範例客戶</b>，看懂之後可以一鍵清除。</span><button class="btn small" id="clearSeed">清除範例</button></div>`:""}
+    <div class="summary">${sum}</div>
+    <section class="section"><h2>今天要聯絡 <span class="count">${due.length}</span></h2>
+      ${due.length?due.map(taskHTML).join(""):`<div class="empty">今天沒有待辦。<br>見完客戶後按下方「＋」新增。</div>`}
+    </section>`;
+  bindCommon();
+  const cs=document.getElementById("clearSeed");
+  if(cs) cs.onclick=()=>confirmSheet("清除所有範例客戶？","你自己新增的客戶不會被刪除。",()=>{
+    const ids=new Set(state.clients.filter(c=>c.example).map(c=>c.id));
+    state.clients=state.clients.filter(c=>!ids.has(c.id));
+    state.followups=state.followups.filter(f=>!ids.has(f.clientId));
+    state.policies=state.policies.filter(p=>!ids.has(p.clientId));
+    state.seeded=false; save(); render(); toast("已清除範例");
+  });
+}
+function renderUpcoming(){
+  const t=today(), end=addDays(t,range);
+  const list=buildTasks().filter(k=>k.due>t&&k.due<=end);
+  view.innerHTML=`
+    <div class="inline" style="justify-content:space-between;flex-wrap:wrap"><h2>即將到來 <span class="count">${list.length}</span></h2>
+    <div class="seg">${[7,30,90].map(n=>`<button data-range="${n}" aria-pressed="${n===range}">${n} 天</button>`).join("")}</div></div>
+    <section class="section">${list.length?list.map(taskHTML).join(""):`<div class="empty">未來 ${range} 天內沒有提醒。</div>`}</section>`;
+  view.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{range=+b.dataset.range;render();});
+  bindCommon();
+}
+function renderClients(){
+  const q=query.trim();
+  const list=state.clients.filter(c=>!q||c.name.includes(q)||(c.note||"").includes(q)).sort((a,b)=>a.name.localeCompare(b.name,"zh-Hant"));
+  view.innerHTML=`
+    <input class="search" id="q" type="search" placeholder="搜尋客戶或備註" value="${esc(query)}">
+    <h2>客戶 <span class="count">${state.clients.length}</span></h2>
+    <section class="section">${list.length?list.map(c=>{
+      const nP=state.policies.filter(p=>p.clientId===c.id).length;
+      return `<button class="client" data-open="${c.id}"><span class="avatar">${esc(c.name[0]||"?")}</span>
+        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>生日 ${esc((c.bday||"--").replace("-","/"))} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span></span></button>`;}).join(""):`<div class="empty">${q?"找不到符合的客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`}</section>`;
+  const qi=document.getElementById("q");
+  qi.oninput=()=>{query=qi.value;const pos=qi.selectionStart;renderClients();const n=document.getElementById("q");n.focus();n.setSelectionRange(pos,pos);};
+  bindCommon();
+}
+function renderClient(id){
+  const c=client(id); if(!c){openClient=null;return render();}
+  const t=today();
+  const fus=state.followups.filter(f=>f.clientId===id).sort((a,b)=>b.date.localeCompare(a.date));
+  const pols=state.policies.filter(p=>p.clientId===id);
+  const jump=c.bday?nextAgeJump(c.bday,t):null, bd=c.bday?nextBirthday(c.bday,t):null;
+  const S=state.settings;
+  view.innerHTML=`
+    <button class="backlink" id="back">‹ 返回</button>
+    <div class="card">
+      <div class="inline"><span class="avatar">${esc(c.name[0])}</span><div style="flex:1;min-width:0"><b style="font-size:20px">${esc(c.name)}</b>${c.example?'<span class="tag">範例</span>':""}</div>
+      <button class="btn small" id="editC">編輯</button></div>
+      <dl class="kv">
+        <dt>生日</dt><dd>${c.bday?esc(c.bday.replace("-","/"))+"（下次 "+fmt(bd)+"）":"未填"}</dd>
+        <dt>跳歲日</dt><dd>${jump?fmtY(jump)+"（還有 "+diff(jump,t)+" 天）":"需填生日"}</dd>
+        <dt>備註</dt><dd>${esc(c.note||"—")}</dd>
+      </dl>
+    </div>
+    <section class="section"><div class="inline" style="justify-content:space-between"><h2>建議書 / 成交追蹤</h2></div>
+      <div class="actions"><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button></div>
+      ${fus.map(f=>{const days=f.type==="proposal"?S.proposalDays:S.dealDays;const base=parseD(f.date);
+        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${f.type==="proposal"?"建議書":"成交"}</span><b>${esc(f.item||"")}</b><span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
+        <div class="steps">${days.map(n=>{const k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];return `<button class="step ${done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${fmtY(dd)}">第${n}天 ${dd.getMonth()+1}/${dd.getDate()}</button>`}).join("")}</div>
+        <div class="actions"><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`}).join("")||`<div class="empty">尚無追蹤紀錄</div>`}
+    </section>
+    <section class="section"><h2>保單</h2>
+      <div class="actions"><button class="btn" id="addP">＋ 新增保單</button></div>
+      ${pols.map(p=>{const a=nextAnniversary(p.eff,t);return `<div class="card" style="gap:6px"><div class="inline" style="justify-content:space-between"><b>${esc(p.name)}</b><button class="btn small" data-editp="${p.id}">編輯</button></div>
+        <dl class="kv"><dt>生效日</dt><dd>${fmtY(parseD(p.eff))}</dd><dt>下次週年</dt><dd>${a?fmtY(a)+"（還有 "+diff(a,t)+" 天）":"—"}</dd>
+        <dt>批註/加費</dt><dd>${RIDER[p.rider||"none"]}${p.rider&&p.rider!=="none"&&p.reviewDate?"，"+fmtY(parseD(p.reviewDate))+" 可申請複查":""}</dd>
+        ${p.note?`<dt>備註</dt><dd>${esc(p.note)}</dd>`:""}</dl></div>`}).join("")||`<div class="empty">尚無保單</div>`}
+    </section>
+    <button class="btn danger" id="delC" style="align-self:flex-start">刪除這位客戶</button>`;
+  document.getElementById("back").onclick=()=>{openClient=null;render();};
+  document.getElementById("editC").onclick=()=>clientSheet(c);
+  document.getElementById("addP").onclick=()=>policySheet(id);
+  view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>followupSheet(id,b.dataset.addfu));
+  view.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>policySheet(id,state.policies.find(p=>p.id===b.dataset.editp)));
+  view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k])delete state.done[k];else state.done[k]=Date.now();save();renderClient(id);});
+  view.querySelectorAll("[data-delfu]").forEach(b=>b.onclick=()=>confirmSheet("刪除這筆追蹤？","",()=>{state.followups=state.followups.filter(f=>f.id!==b.dataset.delfu);save();renderClient(id);}));
+  document.getElementById("delC").onclick=()=>confirmSheet("刪除「"+c.name+"」？","這位客戶的追蹤與保單資料都會一起刪除。",()=>{
+    state.clients=state.clients.filter(x=>x.id!==id);state.followups=state.followups.filter(f=>f.clientId!==id);state.policies=state.policies.filter(p=>p.clientId!==id);
+    save();openClient=null;tab="clients";render();toast("已刪除");});
+}
+function renderSettings(){
+  const S=state.settings;
+  view.innerHTML=`
+    <form class="card" id="setF">
+      <h2>傳訊息的天數</h2>
+      <div class="field"><label for="sP">剛給建議書後第幾天</label><input id="sP" inputmode="numeric" value="${S.proposalDays.join(",")}"><span class="hint">用逗號分隔，例如 1,3,7,14</span></div>
+      <div class="field"><label for="sD">剛成交後第幾天</label><input id="sD" inputmode="numeric" value="${S.dealDays.join(",")}"></div>
+      <h2>提前幾天提醒</h2>
+      <div class="inline">
+        <div class="field" style="flex:1"><label for="sA">保單週年</label><input id="sA" type="number" min="0" value="${S.anniLead}"></div>
+        <div class="field" style="flex:1"><label for="sG">跳歲</label><input id="sG" type="number" min="0" value="${S.ageLead}"></div>
+        <div class="field" style="flex:1"><label for="sR">批註/加費</label><input id="sR" type="number" min="0" value="${S.riderLead}"></div>
+      </div>
+      <h2>訊息範本</h2>
+      <p class="note" style="margin:0">可用代碼：{name} 客戶、{item} 商品/保單、{date} 日期、{kind} 批註或加費</p>
+      ${Object.keys(TYPES).map(k=>`<div class="field"><label for="t_${k}">${TYPES[k].label}</label><textarea id="t_${k}" rows="3">${esc(S.tpl[k])}</textarea></div>`).join("")}
+      <div class="actions"><button class="btn primary" type="submit">儲存設定</button></div>
+    </form>
+    <div class="card">
+      <h2>備份與還原</h2>
+      <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼貼到 LINE 的 Keep 或記事本保存。</p>
+      <div class="actions"><button class="btn" id="exp">複製備份碼</button><button class="btn" id="imp">貼上備份碼還原</button></div>
+    </div>
+    <div class="card"><h2>關於跳歲</h2><p class="note" style="margin:0">保險年齡以足歲計算，未滿 6 個月不計、超過 6 個月加 1 歲，所以「跳歲日」＝生日後 6 個月。只輸入月和日就能算出。</p></div>`;
+  document.getElementById("setF").onsubmit=e=>{
+    e.preventDefault();
+    const nums=v=>[...new Set(v.split(/[,，\s]+/).map(Number).filter(n=>Number.isInteger(n)&&n>0))].sort((a,b)=>a-b);
+    const $=id=>document.getElementById(id);
+    const p=nums($("sP").value), d=nums($("sD").value);
+    if(!p.length||!d.length) return toast("天數至少要填一個正整數");
+    S.proposalDays=p; S.dealDays=d;
+    S.anniLead=Math.max(0,+$("sA").value||0); S.ageLead=Math.max(0,+$("sG").value||0); S.riderLead=Math.max(0,+$("sR").value||0);
+    for(const k of Object.keys(TYPES)) S.tpl[k]=document.getElementById("t_"+k).value;
+    save(); toast("設定已儲存"); render();
+  };
+  document.getElementById("exp").onclick=()=>copy(JSON.stringify(state),"備份碼已複製");
+  document.getElementById("imp").onclick=importSheet;
+}
+function bindCommon(){
+  view.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(b.dataset.copy,"訊息已複製，可貼到 LINE"));
+  view.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openClient=b.dataset.open;render();});
+  view.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{state.done[b.dataset.done]=Date.now();save();render();toast("已標記完成");});
+}
+
+/* ---------- 抽屜表單 ---------- */
+const root=document.getElementById("sheetRoot");
+function openSheet(html,onReady){
+  root.innerHTML=`<div class="sheet-bg" id="bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const bg=document.getElementById("bg");
+  bg.onclick=e=>{if(e.target===bg)closeSheet();};
+  root.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet);
+  onReady&&onReady(root.querySelector(".sheet"));
+}
+function closeSheet(){root.innerHTML="";}
+function confirmSheet(title,body,ok){
+  openSheet(`<h3>${esc(title)}</h3>${body?`<p class="note" style="margin:0">${esc(body)}</p>`:""}<div class="actions"><button class="btn" data-close>取消</button><button class="btn primary" id="ok">確定</button></div>`,
+    ()=>document.getElementById("ok").onclick=()=>{closeSheet();ok();});
+}
+const MASK=/[ＯO○〇◯ｏ]/;
+function autoMask(n){
+  n=n.trim().replace(/\s+/g,"");
+  if(n.length<=1) return n+"Ｏ";
+  if(n.length===2) return n[0]+"Ｏ";
+  return n[0]+"Ｏ".repeat(n.length-2)+n[n.length-1];
+}
+function clientSheet(c){
+  const isNew=!c; c=c||{name:"",bday:"",note:""};
+  const [bm,bd]=(c.bday||"-").split("-");
+  openSheet(`<h3>${isNew?"新增客戶":"編輯客戶"}</h3>
+    <form id="cf" style="display:flex;flex-direction:column;gap:14px">
+      <div class="field"><label for="cn">客戶姓名（中間用 Ｏ）</label>
+        <div class="inline"><input id="cn" value="${esc(c.name)}" placeholder="例：陳Ｏ華" autocomplete="off" style="flex:1"><button type="button" class="btn" id="mask">自動遮罩</button></div>
+        <span class="hint">輸入全名後按「自動遮罩」，會變成 陳Ｏ華。不儲存完整姓名。</span><span class="err" id="cnErr"></span></div>
+      <div class="field"><label>生日（只填月、日）</label>
+        <div class="inline"><select id="bm" aria-label="月" style="flex:1"><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${bm===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select>
+        <select id="bd" aria-label="日" style="flex:1"><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${pad2(i+1)}" ${bd===pad2(i+1)?"selected":""}>${i+1} 日</option>`).join("")}</select></div>
+        <span class="hint">用來計算跳歲日，不需要年份。</span></div>
+      <div class="field"><label for="cnote">備註（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3">${esc(c.note||"")}</textarea></div>
+      ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option></select></div>
+      <div class="field" id="itemF" hidden><label for="item">商品名稱</label><input id="item" placeholder="例：醫療險"></div>`:""}
+      <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">儲存</button></div>
+    </form>`,()=>{
+    const cn=document.getElementById("cn");
+    document.getElementById("mask").onclick=()=>{if(cn.value.trim()&&!MASK.test(cn.value))cn.value=autoMask(cn.value);};
+    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>document.getElementById("itemF").hidden=!nx.value;
+    if(isNew) cn.focus();
+    document.getElementById("cf").onsubmit=e=>{
+      e.preventDefault();
+      const name=cn.value.trim().replace(/[O○〇◯ｏ]/g,"Ｏ"), err=document.getElementById("cnErr");
+      if(!name){err.textContent="請輸入姓名";return;}
+      if(!MASK.test(name)){err.textContent="姓名中間需要有 Ｏ，可按「自動遮罩」";return;}
+      const m=document.getElementById("bm").value, d=document.getElementById("bd").value;
+      if((m&&!d)||(!m&&d)){err.textContent="生日的月、日要一起填";return;}
+      if(m&&d&&+d>new Date(2024,+m,0).getDate()){err.textContent="這個月沒有 "+(+d)+" 日";return;}
+      const data={name,bday:m&&d?m+"-"+d:"",note:document.getElementById("cnote").value.trim()};
+      let id;
+      if(isNew){id=uid();state.clients.push(Object.assign({id},data));
+        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:ymd(today()),item:document.getElementById("item").value.trim()});
+      }else{Object.assign(c,data);id=c.id;}
+      save();closeSheet();openClient=id;render();toast(isNew?"已新增客戶":"已更新");
+    };
+  });
+}
+function followupSheet(clientId,type){
+  openSheet(`<h3>${type==="proposal"?"剛給完建議書":"剛成交"}</h3>
+    <form id="ff" style="display:flex;flex-direction:column;gap:14px">
+      <div class="field"><label for="fi">商品名稱</label><input id="fi" placeholder="例：實支實付醫療險"></div>
+      <div class="field"><label for="fd">日期</label><input id="fd" type="date" value="${ymd(today())}"></div>
+      <p class="note" style="margin:0">會在第 ${(type==="proposal"?state.settings.proposalDays:state.settings.dealDays).join("、")} 天提醒你傳訊息（可在設定修改）。</p>
+      <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">建立提醒</button></div>
+    </form>`,()=>{
+    document.getElementById("ff").onsubmit=e=>{e.preventDefault();
+      const d=document.getElementById("fd").value; if(!d) return toast("請選擇日期");
+      state.followups.push({id:uid(),clientId,type,date:d,item:document.getElementById("fi").value.trim()});
+      save();closeSheet();render();toast("已建立提醒");};
+  });
+}
+function policySheet(clientId,p){
+  const isNew=!p; p=p||{name:"",eff:"",rider:"none",reviewDate:"",note:""};
+  openSheet(`<h3>${isNew?"新增保單":"編輯保單"}</h3>
+    <form id="pf" style="display:flex;flex-direction:column;gap:14px">
+      <div class="field"><label for="pn">險種 / 保單名稱</label><input id="pn" value="${esc(p.name)}" placeholder="例：終身醫療險"></div>
+      <div class="field"><label for="pe">保單生效日</label><input id="pe" type="date" value="${esc(p.eff)}"><span class="hint">用來提醒保單週年日</span></div>
+      <div class="field"><label for="pr">批註 / 加費</label><select id="pr">${Object.entries(RIDER).map(([k,v])=>`<option value="${k}" ${p.rider===k?"selected":""}>${v}</option>`).join("")}</select></div>
+      <div class="field" id="rvF" ${p.rider==="none"?"hidden":""}><label for="pv">可申請複查（拿掉批註/加費）日期</label>
+        <input id="pv" type="date" value="${esc(p.reviewDate)}">
+        <div class="actions"><button type="button" class="btn small" data-plus="6">生效後半年</button><button type="button" class="btn small" data-plus="12">生效後 1 年</button><button type="button" class="btn small" data-plus="24">生效後 2 年</button></div></div>
+      <div class="field"><label for="pno">備註（例：需附健檢報告）</label><textarea id="pno" rows="2">${esc(p.note)}</textarea></div>
+      <div class="actions">${isNew?"":`<button type="button" class="btn danger" id="pdel" style="margin-right:auto">刪除</button>`}<button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">儲存</button></div>
+    </form>`,()=>{
+    const pr=document.getElementById("pr"), pe=document.getElementById("pe"), pv=document.getElementById("pv");
+    pr.onchange=()=>document.getElementById("rvF").hidden=pr.value==="none";
+    root.querySelectorAll("[data-plus]").forEach(b=>b.onclick=()=>{
+      if(!pe.value) return toast("請先填生效日");
+      const e=parseD(pe.value);pv.value=ymd(clampDate(e.getFullYear(),e.getMonth()+ +b.dataset.plus,e.getDate()));});
+    const del=document.getElementById("pdel");
+    if(del) del.onclick=()=>{state.policies=state.policies.filter(x=>x.id!==p.id);save();closeSheet();render();toast("已刪除保單");};
+    document.getElementById("pf").onsubmit=e=>{e.preventDefault();
+      const name=document.getElementById("pn").value.trim();
+      if(!name) return toast("請填保單名稱"); if(!pe.value) return toast("請填生效日");
+      if(pr.value!=="none"&&!pv.value) return toast("請填可申請複查的日期");
+      const data={name,eff:pe.value,rider:pr.value,reviewDate:pr.value==="none"?"":pv.value,note:document.getElementById("pno").value.trim()};
+      if(isNew) state.policies.push(Object.assign({id:uid(),clientId},data)); else Object.assign(p,data);
+      save();closeSheet();render();toast("已儲存保單");};
+  });
+}
+function importSheet(){
+  openSheet(`<h3>貼上備份碼還原</h3>
+    <div class="field"><label for="impT">備份碼</label><textarea id="impT" rows="6" placeholder="把先前複製的備份碼貼在這裡"></textarea>
+    <span class="hint">還原會取代這支手機上現有的資料。</span><span class="err" id="impE"></span></div>
+    <div class="actions"><button class="btn" data-close>取消</button><button class="btn primary" id="impGo">還原</button></div>`,()=>{
+    document.getElementById("impGo").onclick=()=>{
+      try{const s=JSON.parse(document.getElementById("impT").value);
+        if(!Array.isArray(s.clients)) throw 0;
+        state=s; save(); state=load(); closeSheet(); tab="today"; render(); toast("已還原 "+state.clients.length+" 位客戶");
+      }catch(e){document.getElementById("impE").textContent="備份碼格式不正確，請確認完整複製。";}
+    };
+  });
+}
+
+/* ---------- 小工具 ---------- */
+let toastT;
+function toast(msg){
+  let t=document.querySelector(".toast"); if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t);}
+  t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>t.remove(),2200);
+}
+function copy(text,okMsg){
+  const fallback=()=>{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();
+    let ok=false;try{ok=document.execCommand("copy");}catch(e){} ta.remove();
+    if(ok) toast(okMsg); else openSheet(`<h3>請手動複製</h3><textarea rows="6" readonly style="width:100%">${esc(text)}</textarea><div class="actions"><button class="btn primary" data-close>完成</button></div>`,s=>{const a=s.querySelector("textarea");a.focus();a.select();});};
+  try{navigator.clipboard.writeText(text).then(()=>toast(okMsg),fallback);}catch(e){fallback();}
+}
+
+document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;openClient=null;render();});
+document.getElementById("fab").onclick=()=>clientSheet();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden) render();});
+if(!localStorage) {}
+render();
+})();
+</script>
+</body>
+</html>
