@@ -160,6 +160,10 @@ const DEFAULT_SETTINGS={
     {day:5,title:"問一個回一句話就好的問題",tip:"回得越短，越容易回。",tpl:"{name}您好，想請教一下，您比較在意的是保費，還是保障範圍呢？"},
     {day:7,title:"約下次見面：給兩個時間",tip:"給兩個時間，不問要不要。",tpl:"{name}您好，我下週二（{tue}）、週四（{thu}）晚上都有空，哪天方便把剩下的聊完？"}
   ],
+  ageSteps:[
+    {lead:60,title:"軟性聯絡",tip:"不提保險，單純關心近況，為一個月後的約訪暖身。",tpl:"{name}您好，好久不見！最近一切都好嗎？前陣子剛好想到您，跟您問候一下，有空再一起喝杯咖啡。"},
+    {lead:30,title:"約訪跳歲保單檢視",tip:"跳歲前調整保障比較划算，給兩個時間讓客戶選。",tpl:"{name}您好，提醒您保險年齡將在{date}增加一歲，之後保費會跟著調整。想在這之前跟您約個時間一起檢視保單，看看保障需不需要調整。下週二（{tue}）或週四（{thu}）哪天比較方便呢？"}
+  ],
   tags:["股票","房地產","頂客族","體況","儲蓄險愛用戶","有小孩","有車","愛出國"],
   tpl:{
     proposal:"{name}您好，前幾天跟您討論的{item}建議書，不知道您看過了嗎？有任何問題都可以隨時問我喔！",
@@ -280,9 +284,15 @@ function buildTasks(){
   }
   for(const c of state.clients){
     if(!c.bday) continue;
-    const j=nextAgeJump(c.bday,grace); if(!j) continue;
-    const key="ag:"+c.id+":"+ymd(j); if(state.done[key]) continue;
-    out.push({key,type:"age",c,due:addDays(j,-S.ageLead),target:j,detail:"生日 "+c.bday.replace("-","/")+" · "+fmtY(j)+" 保險年齡 +1"});
+    const j=nextAgeJump(c.bday,t); if(!j) continue;  /* 跳歲日已過就不再提醒 */
+    const steps=[...S.ageSteps].sort((a,b)=>b.lead-a.lead);
+    steps.forEach((st,i)=>{
+      const key="ag:"+c.id+":"+ymd(j)+":"+st.lead; if(state.done[key]) return;
+      const due=addDays(j,-st.lead), nxt=steps[i+1];
+      if(nxt&&t>=addDays(j,-nxt.lead)) return;  /* 下一階段開始後，前一階段不再顯示 */
+      out.push({key,type:"age",c,due,target:j,tip:st.tip,stepTpl:st.tpl,
+        detail:"跳歲前 "+st.lead+" 天 · "+st.title+" · 生日 "+c.bday.replace("-","/")+"，"+fmtY(j)+" 保險年齡 +1"});
+    });
   }
   out.sort((a,b)=>a.due-b.due);
   return out;
@@ -437,15 +447,20 @@ function renderSettings(){
         ${st.silent?"":`<textarea id="mt_${i}" rows="3" aria-label="第${st.day}天訊息">${esc(st.tpl)}</textarea>`}</div>`).join("")}
       <h2>客戶標籤</h2>
       <div class="field"><label for="sTags">可選的標籤</label><input id="sTags" value="${esc(S.tags.join("、"))}"><span class="hint">用頓號或逗號分隔</span></div>
+      <h2>跳歲提醒</h2>
+      <p class="note" style="margin:0">跳歲日過了就不再提醒。可用代碼：{name} 客戶、{date} 跳歲日、{tue}{thu} 下週二、週四的日期。</p>
+      ${S.ageSteps.map((st,i)=>`<div class="stepedit">
+        <div class="inline"><label for="ad_${i}">跳歲前</label><input id="ad_${i}" type="number" min="1" value="${st.lead}"><label>天　${esc(st.title)}</label></div>
+        <span class="hint">${esc(st.tip)}</span>
+        <textarea id="at_${i}" rows="4" aria-label="${esc(st.title)}訊息">${esc(st.tpl)}</textarea></div>`).join("")}
       <h2>提前幾天提醒</h2>
       <div class="inline">
         <div class="field" style="flex:1"><label for="sA">保單週年</label><input id="sA" type="number" min="0" value="${S.anniLead}"></div>
-        <div class="field" style="flex:1"><label for="sG">跳歲</label><input id="sG" type="number" min="0" value="${S.ageLead}"></div>
         <div class="field" style="flex:1"><label for="sR">批註/加費</label><input id="sR" type="number" min="0" value="${S.riderLead}"></div>
       </div>
       <h2>訊息範本</h2>
       <p class="note" style="margin:0">可用代碼：{name} 客戶、{item} 商品/保單、{date} 日期、{kind} 批註或加費</p>
-      ${Object.keys(TYPES).filter(k=>k!=="meet").map(k=>`<div class="field"><label for="t_${k}">${TYPES[k].label}</label><textarea id="t_${k}" rows="3">${esc(S.tpl[k])}</textarea></div>`).join("")}
+      ${Object.keys(TYPES).filter(k=>k!=="meet"&&k!=="age").map(k=>`<div class="field"><label for="t_${k}">${TYPES[k].label}</label><textarea id="t_${k}" rows="3">${esc(S.tpl[k])}</textarea></div>`).join("")}
       <div class="actions"><button class="btn primary" type="submit">儲存設定</button></div>
     </form>
     <div class="card">
@@ -461,10 +476,11 @@ function renderSettings(){
     const p=nums($("sP").value), d=nums($("sD").value);
     if(!p.length||!d.length) return toast("天數至少要填一個正整數");
     S.proposalDays=p; S.dealDays=d;
-    S.anniLead=Math.max(0,+$("sA").value||0); S.ageLead=Math.max(0,+$("sG").value||0); S.riderLead=Math.max(0,+$("sR").value||0);
-    for(const k of Object.keys(TYPES)) if(k!=="meet") S.tpl[k]=$("t_"+k).value;
+    S.anniLead=Math.max(0,+$("sA").value||0); S.riderLead=Math.max(0,+$("sR").value||0);
+    for(const k of Object.keys(TYPES)) if(k!=="meet"&&k!=="age") S.tpl[k]=$("t_"+k).value;
     S.meetSteps.forEach((st,i)=>{st.day=Math.max(0,parseInt($("md_"+i).value)||0); if(!st.silent) st.tpl=$("mt_"+i).value;});
     S.meetSteps.sort((a,b)=>a.day-b.day);
+    S.ageSteps.forEach((st,i)=>{st.lead=Math.max(1,parseInt($("ad_"+i).value)||st.lead); st.tpl=$("at_"+i).value;});
     const tg=[...new Set($("sTags").value.split(/[、,，\s]+/).map(x=>x.trim()).filter(Boolean))];
     if(tg.length) S.tags=tg;
     save(); toast("設定已儲存"); render();
