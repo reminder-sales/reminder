@@ -109,6 +109,13 @@ nav.tabs button.tab[aria-current="page"]{color:var(--accent);font-weight:700}
 .note{font-size:13px;color:var(--muted);line-height:1.6}
 .banner{background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 textarea{resize:vertical}
+.stage{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;background:var(--sc);color:var(--surface);font-family:var(--f-num);font-size:13px;font-weight:700;flex:none}
+.avatar.st{background:var(--sc);color:var(--surface);font-family:var(--f-num);font-size:18px}
+.stagepick{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.stagepick button{display:flex;align-items:center;gap:8px;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px;font-size:13px;min-width:0}
+.stagepick button b{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:6px;border:1.5px solid var(--sc);color:var(--sc);font-family:var(--f-num);flex:none}
+.stagepick button[aria-pressed="true"]{border-color:var(--sc);box-shadow:inset 0 0 0 1px var(--sc);font-weight:700}
+.stagepick button[aria-pressed="true"] b{background:var(--sc);color:var(--surface)}
 .opp{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:8px}
 .opp.done{opacity:.6}
 .opp .txt{white-space:pre-wrap;font-size:15px;overflow-wrap:anywhere}
@@ -132,7 +139,7 @@ textarea{resize:vertical}
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <div class="brand">叮咚客戶<small>叮咚一響，該關心誰就知道</small></div>
+  <div class="brand">叮咚客戶<small>追蹤、關懷、成交，叮咚一次搞定</small></div>
   <div class="datebox" id="todayLabel"></div>
 </div></header>
 
@@ -213,6 +220,9 @@ function load(){
   s.settings.tpl=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS.tpl),(s.settings&&s.settings.tpl)||{});
   s.done=s.done||{};
   s.opps=s.opps||[];
+  for(const c of s.clients){ if(!c.stage){ /* 舊資料：依追蹤紀錄推估階段 */
+    const ts=s.followups.filter(f=>f.clientId===c.id).map(f=>f.type);
+    c.stage=ts.includes("deal")?"A":ts.includes("proposal")?"B":ts.includes("meet")?"C":"D"; } }
   return s;
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("無法儲存：瀏覽器封鎖了本機儲存");}}
@@ -251,10 +261,10 @@ function nextAnniversary(eff,from){
 /* ---------- 範例資料（首次開啟） ---------- */
 function seed(s){
   const t=today();
-  const c1={id:uid(),name:"陳Ｏ華",bday:pad2(t.getMonth()+1)+"-"+pad2(Math.min(t.getDate(),28)),note:"喜歡下午聯絡，老大明年上小學",tags:["有小孩","有車"],example:true};
+  const c1={id:uid(),name:"陳Ｏ華",bday:pad2(t.getMonth()+1)+"-"+pad2(Math.min(t.getDate(),28)),note:"喜歡下午聯絡，老大明年上小學",tags:["有小孩","有車"],stage:"C",example:true};
   const jb=addDays(t,20); const back=new Date(jb); back.setMonth(back.getMonth()-6);
-  const c2={id:uid(),name:"林Ｏ婷",bday:pad2(back.getMonth()+1)+"-"+pad2(back.getDate()),note:"考慮醫療險升級",tags:["愛出國","體況"],example:true};
-  const c3={id:uid(),name:"王ＯＯ",bday:"03-15",note:"公司主管，重視退休規劃",tags:["股票","儲蓄險愛用戶"],example:true};
+  const c2={id:uid(),name:"林Ｏ婷",bday:pad2(back.getMonth()+1)+"-"+pad2(back.getDate()),note:"考慮醫療險升級",tags:["愛出國","體況"],stage:"B",example:true};
+  const c3={id:uid(),name:"王ＯＯ",bday:"03-15",note:"公司主管，重視退休規劃",tags:["股票","儲蓄險愛用戶"],stage:"A",example:true};
   s.clients.push(c1,c2,c3);
   s.followups.push({id:uid(),clientId:c1.id,type:"meet",date:ymd(addDays(t,-3)),item:""});
   s.followups.push({id:uid(),clientId:c2.id,type:"proposal",date:ymd(addDays(t,-3)),item:"實支實付醫療險"});
@@ -280,6 +290,15 @@ const TYPES={
 };
 const RIDER={none:"無",exclusion:"批註（除外責任）",loading:"加費",both:"批註＋加費"};
 function client(id){return state.clients.find(c=>c.id===id)}
+const STAGES={
+  A:{label:"已成交",color:"var(--c-deal)"},
+  B:{label:"有興趣，已給建議書",color:"var(--c-prop)"},
+  C:{label:"已見過面",color:"var(--c-anni)"},
+  D:{label:"只有聯絡方式",color:"var(--muted)"}};
+const STAGE_RANK={D:0,C:1,B:2,A:3}, IMPLIED={meet:"C",proposal:"B",deal:"A"};
+function bumpStage(c,type){const st=IMPLIED[type]; if(c&&st&&STAGE_RANK[st]>STAGE_RANK[c.stage||"D"]) c.stage=st;}
+function stageHTML(c){const st=c.stage||"D";return `<span class="stage" style="--sc:${STAGES[st].color}" title="${st}級：${STAGES[st].label}">${st}</span>`}
+function stagePick(id,cur){return `<div class="stagepick" id="${id}">${Object.entries(STAGES).map(([k,v])=>`<button type="button" data-stage="${k}" aria-pressed="${k===cur}" style="--sc:${v.color}"><b>${k}</b>${v.label}</button>`).join("")}</div>`}
 const FU_LABEL={meet:"見面",proposal:"給建議書",deal:"成交"};
 function isFollow(type){return type in FU_LABEL}
 function flow(type){const S=state.settings;
@@ -379,7 +398,7 @@ function taskHTML(k){
   else when=dt<0?"已過 "+(-dt)+" 天":dt===0?"就是今天":(d<=0?"":"提醒 "+fmt(k.due)+" · ")+"還有 "+dt+" 天";
   const msgs=k.alts?k.alts.map(a=>({label:a.label,text:message(Object.assign({},k,{stepTpl:a.tpl}))})):[{label:"",text:message(k)}];
   return `<article class="task ${late?"overdue":""}" style="--tc:${ty.color}">
-    <div class="row1"><span class="chip">${ty.label}</span><span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span></div>
+    <div class="row1"><span class="chip">${ty.label}</span>${stageHTML(k.c)}<span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span></div>
     <div class="detail">${esc(k.detail)}</div>
     ${k.tip?`<div class="tip"><b>訣竅</b>　${esc(k.tip)}</div>`:""}
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
@@ -425,7 +444,7 @@ function renderUpcoming(){
   view.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{range=+b.dataset.range;render();});
   bindCommon();
 }
-let oppShow="open";
+let oppShow="open", stageFilter="";
 function oppMatches(o){return (o.tags||[]).length?state.clients.filter(c=>(c.tags||[]).some(x=>o.tags.includes(x))):[]}
 function renderOpps(){
   const t=today();
@@ -460,15 +479,17 @@ function renderOpps(){
 }
 function renderClients(){
   const q=query.trim();
-  const list=state.clients.filter(c=>(!q||c.name.includes(q)||(c.note||"").includes(q)||(c.tags||[]).some(x=>x.includes(q)))&&(!tagFilter||(c.tags||[]).includes(tagFilter))).sort((a,b)=>a.name.localeCompare(b.name,"zh-Hant"));
+  const list=state.clients.filter(c=>(!q||c.name.includes(q)||(c.note||"").includes(q)||(c.tags||[]).some(x=>x.includes(q)))&&(!tagFilter||(c.tags||[]).includes(tagFilter))&&(!stageFilter||(c.stage||"D")===stageFilter)).sort((a,b)=>STAGE_RANK[b.stage||"D"]-STAGE_RANK[a.stage||"D"]||a.name.localeCompare(b.name,"zh-Hant"));
   view.innerHTML=`
     <input class="search" id="q" type="search" placeholder="搜尋客戶、筆記或標籤" value="${esc(query)}">
+    <div class="seg" id="sf" style="flex-wrap:wrap"><button data-sf="" aria-pressed="${!stageFilter}">全部 ${state.clients.length}</button>${Object.keys(STAGES).map(k=>`<button data-sf="${k}" aria-pressed="${k===stageFilter}" title="${STAGES[k].label}">${k} 級 ${state.clients.filter(c=>(c.stage||"D")===k).length}</button>`).join("")}</div>
     <div class="tagpick" id="tf">${state.settings.tags.map(x=>`<button data-tf="${esc(x)}" aria-pressed="${x===tagFilter}">${esc(x)} <small>${state.clients.filter(c=>(c.tags||[]).includes(x)).length}</small></button>`).join("")}</div>
-    <h2>客戶 <span class="count">${state.clients.length}</span></h2>
+    <h2>客戶 <span class="count">${list.length}</span></h2>
     <section class="section">${list.length?list.map(c=>{
       const nP=state.policies.filter(p=>p.clientId===c.id).length;
-      return `<button class="client" data-open="${c.id}"><span class="avatar">${esc(c.name[0]||"?")}</span>
-        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>生日 ${esc((c.bday||"--").replace("-","/"))} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${tagsHTML(c)}</span></button>`;}).join(""):`<div class="empty">${q||tagFilter?"找不到符合的客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`}</section>`;
+      return `<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}" title="${STAGES[c.stage||"D"].label}">${c.stage||"D"}</span>
+        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>生日 ${esc((c.bday||"--").replace("-","/"))} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${tagsHTML(c)}</span></button>`;}).join(""):`<div class="empty">${q||tagFilter?"找不到符合的客戶":stageFilter?"這個階段還沒有客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`}</section>`;
+  view.querySelectorAll("[data-sf]").forEach(b=>b.onclick=()=>{stageFilter=b.dataset.sf;renderClients();});
   view.querySelectorAll("[data-tf]").forEach(b=>b.onclick=()=>{tagFilter=tagFilter===b.dataset.tf?"":b.dataset.tf;renderClients();});
   const qi=document.getElementById("q");
   qi.oninput=()=>{query=qi.value;const pos=qi.selectionStart;renderClients();const n=document.getElementById("q");n.focus();n.setSelectionRange(pos,pos);};
@@ -484,15 +505,17 @@ function renderClient(id){
   view.innerHTML=`
     <button class="backlink" id="back">‹ 返回</button>
     <div class="card">
-      <div class="inline"><span class="avatar">${esc(c.name[0])}</span><div style="flex:1;min-width:0"><b style="font-size:20px">${esc(c.name)}</b>${c.example?'<span class="tag">範例</span>':""}</div>
+      <div class="inline"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}">${c.stage||"D"}</span><div style="flex:1;min-width:0"><b style="font-size:20px">${esc(c.name)}</b>${c.example?'<span class="tag">範例</span>':""}</div>
       <button class="btn small" id="editC">編輯</button></div>
       <dl class="kv">
+        <dt>階段</dt><dd>${c.stage||"D"} 級：${STAGES[c.stage||"D"].label}</dd>
         <dt>生日</dt><dd>${c.bday?esc(c.bday.replace("-","/"))+"（下次 "+fmt(bd)+"）":"未填"}</dd>
         <dt>跳歲日</dt><dd>${jump?fmtY(jump)+"（還有 "+diff(jump,t)+" 天）":"需填生日"}</dd>
         <dt>標籤</dt><dd>${(c.tags||[]).length?tagsHTML(c):"—"}</dd>
         <dt>筆記</dt><dd style="white-space:pre-wrap">${esc(c.note||"—")}</dd>
       </dl>
     </div>
+    <section class="section"><h2>客戶階段</h2>${stagePick("dStage",c.stage||"D")}</section>
     <section class="section"><div class="inline" style="justify-content:space-between"><h2>追蹤流程</h2></div>
       <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button></div>
       ${fus.map(f=>{const steps=flow(f.type);const base=parseD(f.date);
@@ -515,6 +538,7 @@ function renderClient(id){
     <button class="btn danger" id="delC" style="align-self:flex-start">刪除這位客戶</button>`;
   document.getElementById("back").onclick=()=>{openClient=null;render();};
   document.getElementById("editC").onclick=()=>clientSheet(c);
+  view.querySelectorAll("#dStage [data-stage]").forEach(b=>b.onclick=()=>{c.stage=b.dataset.stage;save();renderClient(id);toast("已改為 "+c.stage+" 級");});
   document.getElementById("addP").onclick=()=>policySheet(id);
   view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>followupSheet(id,b.dataset.addfu));
   view.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>policySheet(id,state.policies.find(p=>p.id===b.dataset.editp)));
@@ -640,6 +664,7 @@ function clientSheet(c){
         <div class="inline"><select id="bm" aria-label="月" style="flex:1"><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${bm===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select>
         <select id="bd" aria-label="日" style="flex:1"><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${pad2(i+1)}" ${bd===pad2(i+1)?"selected":""}>${i+1} 日</option>`).join("")}</select></div>
         <span class="hint">用來計算跳歲日，不需要年份。</span></div>
+      <div class="field"><label>客戶階段（必選）</label>${stagePick("sp",isNew?"":c.stage||"D")}<span class="err" id="spErr"></span></div>
       <div class="field"><label>標籤（可複選）</label>
         <div class="tagpick" id="tp">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="inline"><input id="newTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="addTag">加入</button></div></div>
@@ -651,7 +676,11 @@ function clientSheet(c){
     </form>`,()=>{
     const cn=document.getElementById("cn");
     document.getElementById("mask").onclick=()=>{if(cn.value.trim()&&!MASK.test(cn.value))cn.value=autoMask(cn.value);};
-    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{document.getElementById("itemF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";};
+    const sp=document.getElementById("sp");
+    const setStage=k=>sp.querySelectorAll("[data-stage]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.stage===k));
+    const curStage=()=>{const b=sp.querySelector('[aria-pressed="true"]');return b?b.dataset.stage:"";};
+    sp.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{setStage(b.dataset.stage);document.getElementById("spErr").textContent="";});
+    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const im=IMPLIED[nx.value]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";};
     const tp=document.getElementById("tp");
     const bindTags=()=>tp.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
     bindTags();
@@ -669,10 +698,12 @@ function clientSheet(c){
       const m=document.getElementById("bm").value, d=document.getElementById("bd").value;
       if((m&&!d)||(!m&&d)){err.textContent="生日的月、日要一起填";return;}
       if(m&&d&&+d>new Date(2024,+m,0).getDate()){err.textContent="這個月沒有 "+(+d)+" 日";return;}
-      const data={name,bday:m&&d?m+"-"+d:"",note:document.getElementById("cnote").value.trim(),
+      const stage=curStage(); if(!stage){document.getElementById("spErr").textContent="請選擇客戶階段（A／B／C／D）";return;}
+      const data={name,stage,bday:m&&d?m+"-"+d:"",note:document.getElementById("cnote").value.trim(),
         tags:[...tp.querySelectorAll('[data-tag][aria-pressed="true"]')].map(b=>b.dataset.tag)};
       let id;
       if(isNew){id=uid();state.clients.push(Object.assign({id},data));
+        if(nx&&nx.value){bumpStage(state.clients[state.clients.length-1],nx.value);} 
         if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:ymd(today()),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined});
       }else{Object.assign(c,data);id=c.id;}
       save();closeSheet();openClient=id;render();toast(isNew?"已新增客戶":"已更新");
@@ -695,7 +726,8 @@ function followupSheet(clientId,type){
       const fw=document.getElementById("fw");
       const fp=document.getElementById("fp");
       state.followups.push({id:uid(),clientId,type,date:d,item:document.getElementById("fi").value.trim(),wait:fw?fw.checked:undefined,premium:fp?fp.value.trim():undefined});
-      save();closeSheet();render();toast("已建立提醒");};
+      const cl=client(clientId), before=cl&&cl.stage; bumpStage(cl,type);
+      save();closeSheet();render();toast(cl&&cl.stage!==before?"已建立提醒，客戶升為 "+cl.stage+" 級":"已建立提醒");};
   });
 }
 function policySheet(clientId,p){
