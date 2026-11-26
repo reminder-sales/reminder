@@ -272,7 +272,7 @@ function seed(s){
   const eff=addDays(t,18); eff.setFullYear(eff.getFullYear()-2);
   s.policies.push({id:uid(),clientId:c1.id,name:"定期壽險",eff:ymd(eff),rider:"none",reviewDate:"",note:""});
   const eff2=addDays(t,-370);
-  s.policies.push({id:uid(),clientId:c3.id,name:"重大傷病險",eff:ymd(eff2),rider:"loading",reviewDate:ymd(addDays(t,5)),note:"血壓偏高加費，一年後可附健檢報告申請複查"});
+  s.policies.push({id:uid(),clientId:c3.id,name:"重大傷病險",eff:ymd(eff2),rider:"loading",reviewDate:ymd(addDays(t,5)),note:"有加費，一年後可附健檢報告申請複查"});
   s.seeded=true;
 }
 function pad2(n){return String(n).padStart(2,"0")}
@@ -687,7 +687,7 @@ function clientSheet(c){
       <div class="field"><label>標籤（可複選）</label>
         <div class="tagpick" id="tp">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="inline"><input id="newTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="addTag">加入</button></div></div>
-      <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3">${esc(c.note||"")}</textarea></div>
+      <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
       ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶（啟動 7 天流程）</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option></select></div>
       <div class="field" id="itemF"><label for="item">商品名稱（可不填）</label><input id="item" placeholder="例：醫療險"></div>
       <div class="field" id="premF" hidden><label for="prem">保費</label><input id="prem" placeholder="例：年繳 36,000 元"></div>`:""}
@@ -762,7 +762,7 @@ function policySheet(clientId,p){
       <label class="inline" style="font-size:14px;font-weight:700"><input type="checkbox" id="pm" ${p.monthly?"checked":""} style="width:auto"> 月配息類型商品</label>
       <div class="field" id="pmF" ${p.monthly?"":"hidden"}><label for="ps">保單簽收日</label><input id="ps" type="date" value="${esc(p.signDate||"")}">
         <span class="hint">簽收後第 ${state.settings.fundDays} 天提醒你告訴客戶基金已經進場（天數可在設定修改）</span></div>
-      <div class="field"><label for="pno">備註（例：需附健檢報告）</label><textarea id="pno" rows="2">${esc(p.note)}</textarea></div>
+      <div class="field"><label for="pno">備註（例：需附健檢報告）</label><textarea id="pno" rows="2">${esc(p.note)}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
       <div class="actions">${isNew?"":`<button type="button" class="btn danger" id="pdel" style="margin-right:auto">刪除</button>`}<button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">儲存</button></div>
     </form>`,()=>{
     const pr=document.getElementById("pr"), pe=document.getElementById("pe"), pv=document.getElementById("pv");
