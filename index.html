@@ -756,7 +756,7 @@ function clientSheet(c){
     <form id="cf" style="display:flex;flex-direction:column;gap:14px">
       <div class="field"><label for="cn">客戶姓名（中間用 Ｏ）</label>
         <div class="inline"><input id="cn" value="${esc(c.name)}" placeholder="例：陳Ｏ華" autocomplete="off" style="flex:1"><button type="button" class="btn" id="mask">自動遮罩</button></div>
-        <span class="hint">輸入全名後按「自動遮罩」，會變成 陳Ｏ華。不儲存完整姓名。</span><span class="err" id="cnErr"></span></div>
+        <span class="hint">忘了遮罩也沒關係，按儲存時會自動變成 陳Ｏ華，不會存完整姓名。</span><span class="err" id="cnErr"></span></div>
       <div class="field"><label>生日（只填月、日）</label>
         <div class="inline"><select id="bm" aria-label="月" style="flex:1"><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${bm===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select>
         <select id="bd" aria-label="日" style="flex:1"><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${pad2(i+1)}" ${bd===pad2(i+1)?"selected":""}>${i+1} 日</option>`).join("")}</select></div>
@@ -796,9 +796,9 @@ function clientSheet(c){
     if(isNew) cn.focus();
     document.getElementById("cf").onsubmit=e=>{
       e.preventDefault();
-      const name=cn.value.trim().replace(/[O○〇◯ｏ]/g,"Ｏ"), err=document.getElementById("cnErr");
+      let name=cn.value.trim().replace(/\s+/g,"").replace(/[O○〇◯ｏ]/g,"Ｏ"), err=document.getElementById("cnErr"), masked=false;
       if(!name){err.textContent="請輸入姓名";return;}
-      if(!MASK.test(name)){err.textContent="姓名中間需要有 Ｏ，可按「自動遮罩」";return;}
+      if(!MASK.test(name)){name=autoMask(name);cn.value=name;masked=true;}
       const m=document.getElementById("bm").value, d=document.getElementById("bd").value;
       if((m&&!d)||(!m&&d)){err.textContent="生日的月、日要一起填";return;}
       if(m&&d&&+d>new Date(2024,+m,0).getDate()){err.textContent="這個月沒有 "+(+d)+" 日";return;}
@@ -810,7 +810,7 @@ function clientSheet(c){
         if(nx&&nx.value){bumpStage(state.clients[state.clients.length-1],nx.value);} 
         if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:ymd(today()),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined,track:nx.value==="meet"?document.getElementById("track").checked:undefined,...(nx.value==="deal"?readDealOpts("n"):{})});
       }else{Object.assign(c,data);id=c.id;}
-      save();closeSheet();openClient=id;render();toast(isNew?"已新增客戶":"已更新");
+      save();closeSheet();openClient=id;render();toast((isNew?"已新增客戶":"已更新")+(masked?"，姓名已自動遮罩為 "+name:""));
     };
   });
 }
