@@ -118,6 +118,9 @@ textarea{resize:vertical}
 select:disabled{opacity:.45}
 .checks{display:flex;flex-direction:column;gap:8px}
 .client .meta .oppline{display:block;font-size:12px;color:var(--c-anni);font-weight:700}
+.donebtn{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;padding:12px;font-size:16px;font-weight:700;border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);box-shadow:0 2px 6px rgb(0 0 0 / .15)}
+.donebtn:active{transform:translateY(1px)}
+.donebtn small{font-weight:400;font-size:12px;opacity:.85}
 .saved{font-size:12px;color:var(--muted);text-align:right}
 .pcard{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .pcard .hint{font-size:12px;color:var(--muted)}
@@ -181,7 +184,7 @@ const DEFAULT_SETTINGS={
   riderLead:14,
   fundDays:12,
   dealSteps:[
-    {day:1,title:"整理這次買了什麼",tip:"把商品、保費、等待期寫清楚，客戶安心，也減少日後誤會。",tpl:"{name}你好，恭喜你規劃了新的保障！幫你整理這次規劃的內容：\n・商品：{item}\n・保費：{premium}\n・等待期：{waits}{monthly}\n等待期過後保障就完整生效，到時候我會再提醒你。有任何問題隨時問我！"},
+    {day:1,title:"整理這次買了什麼",tip:"把商品、保費、等待期寫清楚，客戶安心，也減少日後誤會。",tpl:"{name}你好，恭喜你規劃了新的保障！幫你整理這次規劃的內容：\n・商品：{item}\n・保費：{premium}\n・等待期：{waits}{monthly}{health}\n等待期過後保障就完整生效，到時候我會再提醒你。有任何問題隨時問我！"},
     {day:7,title:"查核保進度：有照會就主動聯絡，保單下來就約簽收",tip:"先查核保進度，再選一則傳：有照會就說明要補什麼；保單核發了就約時間簽收。",
      alts:[{label:"有照會",tpl:"{name}你好，保險公司那邊有一些資料想再跟你確認（照會內容：　　），我先幫你整理好需要準備的東西。方便的話我們約個時間處理，越快補件，保單就越快下來。"},
            {label:"約簽收",tpl:"{name}你好，好消息！你的{item}保單已經核發下來了，想約時間把保單送過去給你簽收，順便花 15 分鐘說明理賠怎麼申請。{next1}或{next2}哪天方便呢？"}]},
@@ -260,6 +263,12 @@ function load(){
       s.settings.meetSteps.push(structuredCloneSafe(DEFAULT_SETTINGS.meetSteps.find(x=>x.call)));
       s.settings.meetSteps.sort((a,b)=>a.day-b.day);}
     s.settings.msgVer=Math.max(s.settings.msgVer||1,4);
+  }
+  /* v5：成交第 1 天訊息加入體況說明 */
+  if((s.settings.msgVer||1)<5){
+    const d1b=(s.settings.dealSteps||[]).find(x=>x.day===1);
+    if(d1b&&d1b.tpl&&d1b.tpl.includes("{monthly}")&&!d1b.tpl.includes("{health}")) d1b.tpl=d1b.tpl.replace("{monthly}","{monthly}{health}");
+    s.settings.msgVer=5;
   }
   for(const c of s.clients){ if(!c.stage){ /* 舊資料：依追蹤紀錄推估階段 */
     const ts=s.followups.filter(f=>f.clientId===c.id).map(f=>f.type);
@@ -356,6 +365,7 @@ function dealWaits(f){const W=state.settings.waitSteps;
 function waitLabel(st){return st.title.replace("等待期結束","").replace(/^疾病$/,"一般疾病")+"等待期 "+(st.day%365===0?st.day/365+" 年":st.day+" 天")}
 function dealOptsHTML(pre){const W=state.settings.waitSteps;
   return `<div class="field"><label>成交後追蹤項目（勾選需要的）</label><div class="checks">
+    <label class="inline bdu"><input type="checkbox" id="${pre}hc"> 有體況（不會馬上扣款）</label>
     <label class="inline bdu"><input type="checkbox" id="${pre}mo"> 月配息</label>
     <div class="field" id="${pre}moF" hidden style="padding-left:26px"><input id="${pre}amt" placeholder="每月配息金額，例：3,000 元">
       <label for="${pre}sd" style="font-weight:400;font-size:13px">保單簽收日（還不知道可以之後在客戶頁補填）</label><input id="${pre}sd" type="date"></div>
@@ -363,7 +373,7 @@ function dealOptsHTML(pre){const W=state.settings.waitSteps;
   </div><span class="hint">月配息：簽收後第 ${state.settings.fundDays} 天提醒你告訴客戶基金已進場。等待期：結束當天提醒。</span></div>`}
 function bindDealOpts(pre){const m=document.getElementById(pre+"mo"); if(m) m.onchange=()=>document.getElementById(pre+"moF").hidden=!m.checked;}
 function readDealOpts(pre){const W=state.settings.waitSteps, $=id=>document.getElementById(pre+id), m=$("mo").checked;
-  return {waitIdx:W.map((_,i)=>i).filter(i=>$("w"+i).checked),monthly:m,amount:m?$("amt").value.trim():"",signDate:m?$("sd").value:""};}
+  return {health:$("hc").checked,waitIdx:W.map((_,i)=>i).filter(i=>$("w"+i).checked),monthly:m,amount:m?$("amt").value.trim():"",signDate:m?$("sd").value:""};}
 function waitsText(f){
   const ws=dealWaits(f); if(!ws.length) return "無";
   const b=parseD(f.date);
@@ -383,7 +393,7 @@ function buildTasks(){
       const n=st.day, key="fu:"+f.id+":"+n; if(state.done[key]) return;
       const due=addDays(base,n);
       const head=FU_LABEL[f.type]+(n===0?"當天":"後第 "+n+" 天")+"（"+(i+1)+"/"+steps.length+"）";
-      out.push({key,type:f.type,c,due,target:due,item:f.item,tip:st.tip,stepTpl:st.tpl,alts:st.call?[{label:"沒接：留言",tpl:st.tpl}]:st.alts,call:st.call,premium:f.premium,waits:waitsText(f),monthly:f.monthly,amount:f.amount,
+      out.push({key,type:f.type,c,due,target:due,item:f.item,tip:st.tip,stepTpl:st.tpl,alts:st.call?[{label:"沒接：留言",tpl:st.tpl}]:st.alts,call:st.call,premium:f.premium,waits:waitsText(f),monthly:f.monthly,amount:f.amount,health:f.health,
         detail:head+(st.title?" · "+st.title:"")+(f.item?" · "+f.item:"")});
     });
   }
@@ -463,6 +473,7 @@ function message(task){
   return tpl.replaceAll("{next1}",fmt(addDays(task.due,1))).replaceAll("{next2}",fmt(addDays(task.due,2))).replaceAll("{tue}",sl.tue).replaceAll("{thu}",sl.thu).replaceAll("{name}",task.c.name).replaceAll("{item}",task.item||"保單")
     .replaceAll("{date}",fmtY(task.target)).replaceAll("{kind}",task.kind||"")
     .replaceAll("{premium}",task.premium||"（保費）").replaceAll("{waits}",task.waits||"無")
+    .replaceAll("{health}",task.health?"\n・體況：這次可能會有體況的照會，所以不會馬上扣款；後續需要補病歷的話我會直接聯絡你。":"")
     .replaceAll("{monthly}",task.monthly?"\n・月配息：每月約 "+(task.amount||"（金額）"):"").replaceAll("{amount}",task.amount||"（金額）");
 }
 
@@ -513,12 +524,12 @@ function taskHTML(k){
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
     ${k.type==="appt"?`<div class="inline" style="flex-wrap:wrap"><input type="datetime-local" id="ap_${k.fid}" aria-label="預定見面時間" style="flex:1;min-width:180px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small primary" data-apsave="${k.fid}">儲存見面時間</button></div>
     <div class="actions"><button class="btn small" data-apsnooze="${k.fid}">還沒約到，明天再提醒</button><button class="btn small" data-done="${esc(k.key)}">不用約了</button></div></article>`:
-    k.type==="visit"?`<div class="actions"><button class="btn small primary" data-done="${esc(k.key)}">✓ 已見面</button></div></article>`:`
+    k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button></article>`:`
     <div class="actions">
       ${msgs.map(m=>`<button class="btn small" data-copy="${esc(m.text)}">複製${m.label?"「"+esc(m.label)+"」":"訊息"}</button>
       <a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/msg/text/?${encodeURIComponent(fillGreet(m.text))}" target="_blank" rel="noopener">${m.label?"LINE「"+esc(m.label)+"」":"用 LINE 傳"}</a>`).join("")}
-      <button class="btn small primary" data-done="${esc(k.key)}">${k.call?"✓ 已打電話":"✓ 已聯絡"}</button>
-    </div></article>`}`;
+    </div>
+    <button class="donebtn" data-done="${esc(k.key)}">${k.call?"✓ 已打電話":"✓ 已聯絡"} <small>按這裡完成</small></button></article>`}`;
 }
 function tagsHTML(c){const t=c.tags||[];return t.length?`<div class="ctags">${t.map(x=>`<span class="ctag">${esc(x)}</span>`).join("")}</div>`:""}
 function renderToday(){
@@ -654,7 +665,7 @@ function renderClient(id){
     <section class="section"><div class="inline" style="justify-content:space-between"><h2>追蹤流程</h2></div>
       <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button></div>
       ${fus.map(f=>{const steps=flow(f.type);const base=parseD(f.date);
-        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
+        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
         ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
           if(st.silent) return `<span class="step rest" title="${esc(st.tip||"")}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()} 不傳</span>`;
