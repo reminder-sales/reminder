@@ -114,6 +114,8 @@ nav.tabs button.tab[aria-current="page"]{color:var(--accent);font-weight:700}
 .note{font-size:13px;color:var(--muted);line-height:1.6}
 .banner{background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 textarea{resize:vertical}
+.terms{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.7}
+.terms b{color:var(--accent)}
 .task .go{color:var(--muted);font-size:18px;line-height:1;margin-left:2px}
 .task:active{filter:brightness(.97)}
 .nameinput{font-size:20px;font-weight:700;border:1px solid transparent;border-bottom:1px dashed var(--line);background:transparent;border-radius:6px 6px 0 0;padding:4px 6px;width:100%;min-width:0}
@@ -775,6 +777,11 @@ function renderSettings(){
       <div class="actions"><button class="btn primary" type="submit">儲存標籤</button></div>
     </form>
     <div class="card">
+      <h2>使用須知</h2>
+      <p class="note" style="margin:0">資料存放方式、你的個資責任和記錄原則。${state.termsAt?"你在 "+fmtY(parseD(state.termsAt))+" 已閱讀。":""}</p>
+      <div class="actions"><button class="btn" id="terms">查看使用須知</button></div>
+    </div>
+    <div class="card">
       <h2>備份與還原</h2>
       <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼存到安全的地方。</p>
       <div class="actions"><button class="btn" id="exp">複製備份碼</button><button class="btn" id="imp">貼上備份碼還原</button></div>
@@ -787,6 +794,7 @@ function renderSettings(){
   };
   document.getElementById("exp").onclick=()=>copy(JSON.stringify(state),"備份碼已複製");
   document.getElementById("imp").onclick=importSheet;
+  document.getElementById("terms").onclick=()=>showTerms(false);
 }
 function bindCommon(){
   view.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(fillGreet(b.dataset.copy),"訊息已複製，可貼到 LINE"));
@@ -812,6 +820,23 @@ function openSheet(html,onReady){
   onReady&&onReady(root.querySelector(".sheet"));
 }
 function closeSheet(){root.innerHTML="";}
+/* ---------- 使用須知 ---------- */
+const TERMS_VER=1;
+const TERMS_HTML=`<h3>使用須知</h3>
+  <ol class="terms">
+    <li><b>資料存在哪裡</b>：你輸入的客戶資料只存在這支手機的瀏覽器裡，不會上傳到任何伺服器。App 提供者看不到、也不會取得或保管你的任何資料。</li>
+    <li><b>你的責任</b>：客戶資料由你自行蒐集、記錄和使用，請遵守《個人資料保護法》和所屬公司的規定。使用前請先確認公司允許把客戶資料記錄在個人手機。</li>
+    <li><b>記錄原則</b>：姓名要遮罩（系統會自動處理），生日只記月份。不要記錄病名、檢查數值、身分證字號、電話、地址。客戶要求刪除資料時，請刪除這位客戶。</li>
+    <li><b>保護手機</b>：手機請設定螢幕鎖，不要讓別人使用。備份碼裡有你全部的客戶資料，請存放在安全的地方，不要傳給別人。</li>
+    <li><b>資料遺失</b>：清除瀏覽器資料、刪除主畫面圖示或更換手機，都可能讓資料消失，請定期備份。資料遺失或因使用本 App 造成的任何損失，App 提供者不負責任。</li>
+    <li><b>訊息內容</b>：系統提供的訊息只是參考，傳送前請自己確認內容正確，並符合公司規範。</li>
+  </ol>`;
+function showTerms(force){
+  openSheet(TERMS_HTML+`<div class="actions">${force?"":`<button class="btn" data-close>關閉</button>`}<button class="btn primary" id="termsOk">我了解${force?"，開始使用":""}</button></div>`,()=>{
+    if(force){const bg=document.getElementById("bg"); bg.onclick=null;}
+    document.getElementById("termsOk").onclick=()=>{state.termsVer=TERMS_VER;state.termsAt=ymd(today());save();closeSheet();};
+  });
+}
 function confirmSheet(title,body,ok){
   openSheet(`<h3>${esc(title)}</h3>${body?`<p class="note" style="margin:0">${esc(body)}</p>`:""}<div class="actions"><button class="btn" data-close>取消</button><button class="btn primary" id="ok">確定</button></div>`,
     ()=>document.getElementById("ok").onclick=()=>{closeSheet();ok();});
@@ -1050,7 +1075,7 @@ function copy(text,okMsg){
 document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{tab=b.dataset.tab;openClient=null;render();});
 document.getElementById("fab").onclick=()=>clientSheet();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden) render();});
-if(!localStorage) {}
+if(state.termsVer!==TERMS_VER) setTimeout(()=>showTerms(true),0);
 try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist();}catch(e){}
 render();
 })();
