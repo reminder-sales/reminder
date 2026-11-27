@@ -234,7 +234,7 @@ const DEFAULT_SETTINGS={
     {lead:60,title:"軟性聯絡",tip:"不提保險，單純關心近況，為一個月後的約訪暖身。",tpl:"{name}你好，好久不見！最近一切都好嗎？前陣子剛好想到你，跟你問候一下，有空再一起喝杯咖啡。"},
     {lead:30,title:"約訪跳歲保單檢視",tip:"跳歲前調整保障比較划算，給兩個時間讓客戶選。",tpl:"{name}你好，提醒你保險年齡將在{date}增加一歲，之後保費會跟著調整。想在這之前跟你約個時間一起檢視保單，看看保障需不需要調整。下週二（{tue}）或週四（{thu}）哪天比較方便呢？"}
   ],
-  tags:["股票","房地產","頂客族","體況","儲蓄險愛用戶","有小孩","有車","愛出國"],
+  tags:["股票","房地產","頂客族","體況","儲蓄險愛用戶","有家庭","有小孩","有車","愛出國"],
   tpl:{
     fund:"{name}你好，跟你報告：你的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給你，有任何問題隨時問我！",
     proposal:"{name}你好，前幾天跟你討論的{item}建議書，不知道你看過了嗎？有任何問題都可以隨時問我喔！",
@@ -300,6 +300,9 @@ function load(){
     c.stage=ts.includes("deal")?"A":ts.includes("proposal")?"B":ts.includes("meet")?"C":"D"; } }
   /* 天數與訊息一律使用系統預設，使用者不能自行調整（只保留自訂標籤） */
   for(const k of Object.keys(DEFAULT_SETTINGS)) if(k!=="tags") s.settings[k]=structuredCloneSafe(DEFAULT_SETTINGS[k]);
+  /* 新增的預設標籤補進舊資料（每個只補一次，使用者刪掉後不會再加回來） */
+  s.settings.addedTags=s.settings.addedTags||[];
+  for(const t of ["有家庭"]) if(!s.settings.addedTags.includes(t)){ if(!s.settings.tags.includes(t)) s.settings.tags.splice(Math.max(0,s.settings.tags.indexOf("有小孩")),0,t); s.settings.addedTags.push(t); }
   return s;
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("無法儲存：瀏覽器封鎖了本機儲存");}}
@@ -955,6 +958,7 @@ function clientSheet(c){
 }
 /* ---------- 見面資訊整理（純規則，不連網、不傳出手機） ---------- */
 const TAG_RULES=[
+  ["有家庭",/太太|老婆|先生|老公|結婚|已婚|配偶|另一半|家人|家庭|爸媽|父母|公婆/],
   ["有小孩",/小孩|孩子|兒子|女兒|小朋友|老大|老二|寶寶|幼兒園|幼稚園|國小|小學|國中|高中|補習/],
   ["股票",/股票|ETF|etf|台積電|股市|存股|當沖|基金/],
   ["房地產",/買房|房子|房貸|預售屋|裝潢|租屋|房東|換屋|房價/],
