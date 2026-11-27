@@ -901,24 +901,92 @@ function clientSheet(c){
     };
   });
 }
+/* ---------- 見面資訊整理（純規則，不連網、不傳出手機） ---------- */
+const TAG_RULES=[
+  ["有小孩",/小孩|孩子|兒子|女兒|小朋友|老大|老二|寶寶|幼兒園|幼稚園|國小|小學|國中|高中|補習/],
+  ["股票",/股票|ETF|etf|台積電|股市|存股|當沖|基金/],
+  ["房地產",/買房|房子|房貸|預售屋|裝潢|租屋|房東|換屋|房價/],
+  ["有車",/開車|買車|換車|車貸|車子|汽車|機車/],
+  ["愛出國",/出國|旅遊|旅行|日本|韓國|歐洲|美國|泰國|機票|自由行/],
+  ["頂客族",/頂客|不生小孩|不打算生|沒有要生/],
+  ["體況",/住院|開刀|手術|生病|體檢|健檢|吃藥|回診|慢性|病|血壓|血糖|過敏/],
+  ["儲蓄險愛用戶",/儲蓄險|存錢|定存|還本|強迫儲蓄/]
+];
+const OPP_RE=/想要|想買|想換|想存|想幫|考慮|打算|計畫|規劃|準備|預計|明年|今年|之後要|快要|擔心|煩惱|需要|不夠|退休|教育金|保障/;
+const SENSITIVE_RE=/血壓|血糖|糖尿病|癌|腫瘤|心臟|中風|肝|腎|憂鬱|焦慮|身分證|身份證|地址|電話|手機號碼|\d{4}-?\d{3}-?\d{3}/;
+const FILLER_HEAD=/^(然後|就是|那個|這個|其實|基本上|對啊|對|嗯+|喔|啊|欸|所以|因為|而且|另外|還有|反正|總之|他說|她說|客戶說|有提到|提到)+/;
+const FILLER_TAIL=/(啦|喔|耶|欸|嘛|啊|吧|的樣子|這樣子?|而已)+$/;
+function organizeInfo(text){
+  const seen=new Set(), points=[];
+  for(let part of text.split(/[。！？!?\n；;，,]+/)){
+    part=part.trim().replace(/\s+/g," ");
+    let prev; do{prev=part; part=part.replace(FILLER_HEAD,"").replace(FILLER_TAIL,"").trim();}while(part!==prev);
+    if(part.length<2||seen.has(part)) continue;
+    seen.add(part); points.push(part);
+  }
+  const all=points.join("。");
+  const tags=new Set();
+  for(const [tag,re] of TAG_RULES) if(re.test(all)) tags.add(tag);
+  for(const tag of state.settings.tags) if(tag.length>=2&&all.includes(tag)) tags.add(tag);
+  return {points,tags:[...tags],opps:points.filter(x=>OPP_RE.test(x)),warn:points.filter(x=>SENSITIVE_RE.test(x))};
+}
 function followupSheet(clientId,type){
-  const steps=flow(type).filter(st=>!st.silent);
-  openSheet(`<h3>${type==="meet"?"剛見完客戶":type==="proposal"?"剛給完建議書":"剛成交"}</h3>
+  const steps=flow(type).filter(st=>!st.silent), isMeet=type==="meet", cl=client(clientId);
+  openSheet(`<h3>${isMeet?"剛見完客戶":type==="proposal"?"剛給完建議書":"剛成交"}</h3>
     <form id="ff" style="display:flex;flex-direction:column;gap:14px">
-      <div class="field"><label for="fi">商品名稱${type==="meet"?"（可不填）":""}</label><input id="fi" placeholder="例：實支實付醫療險"></div>
+      ${isMeet?`<p class="note" style="margin:0">見面日期：<b>今天 ${fmt(today())}</b></p>
+      <div class="field"><label for="finfo">這次得到的資訊</label>
+        <textarea id="finfo" rows="5" placeholder="想到什麼就打什麼，不用管格式。例：老大明年上小學 然後他在考慮換車 有在買ETF 太太比較擔心醫療費"></textarea>
+        <button type="button" class="btn" id="forgBtn" style="align-self:flex-start">整理重點</button></div>
+      <div id="forg" class="card" hidden style="gap:10px">
+        <div class="field"><label for="fsum">整理後的重點（可以修改，會存進客戶筆記）</label><textarea id="fsum" rows="5"></textarea></div>
+        <div id="fwarn"></div>
+        <div class="field"><label>建議加上的標籤（點一下選取／取消）</label><div class="tagpick" id="ftags"></div></div>
+        <div class="field"><label for="fopp">可能的商機（可以修改，會存進商機欄）</label><textarea id="fopp" rows="2"></textarea></div>
+      </div>`:""}
+      <div class="field"><label for="fi">商品名稱${isMeet?"（可不填）":""}</label><input id="fi" placeholder="例：實支實付醫療險"></div>
       ${type==="deal"?`<div class="field"><label for="fp">保費</label><input id="fp" placeholder="例：年繳 36,000 元"></div>`:""}
-      <div class="field"><label for="fd">日期</label><input id="fd" type="date" value="${ymd(today())}"></div>
-      ${type==="meet"?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 有激發興趣，啟動見面後追蹤（${steps.map(st=>dayLabel(st.day)).join("、")}提醒）</label><p class="note" style="margin:0">單純見面取得資訊就不用勾，只會記錄見面日期。</p>`:`<p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息（可在設定修改）。</p>`}
+      ${isMeet?"":`<div class="field"><label for="fd">日期</label><input id="fd" type="date" value="${ymd(today())}"></div>`}
+      ${isMeet?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 有激發興趣，啟動見面後追蹤（${steps.map(st=>dayLabel(st.day)).join("、")}提醒）</label><p class="note" style="margin:0">單純見面取得資訊就不用勾，只會記錄見面和整理好的重點。</p>`:`<p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息（可在設定修改）。</p>`}
       ${type==="deal"?dealOptsHTML("f"):""}
-      <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">建立提醒</button></div>
+      <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">${isMeet?"儲存":"建立提醒"}</button></div>
     </form>`,()=>{
     bindDealOpts("f");
-    document.getElementById("ff").onsubmit=e=>{e.preventDefault();
-      const d=document.getElementById("fd").value; if(!d) return toast("請選擇日期");
-      const fp=document.getElementById("fp");
-      state.followups.push({id:uid(),clientId,type,date:d,item:document.getElementById("fi").value.trim(),premium:fp?fp.value.trim():undefined,...(type==="deal"?readDealOpts("f"):{}),track:type==="meet"?document.getElementById("ftrack").checked:undefined});
-      const cl=client(clientId), before=cl&&cl.stage; bumpStage(cl,type);
-      save();closeSheet();render();const what=type==="meet"&&!document.getElementById("ftrack")?.checked?"已記錄見面":"已建立提醒";
+    const $=id=>document.getElementById(id);
+    const runOrganize=()=>{
+      const r=organizeInfo($("finfo").value);
+      if(!r.points.length){toast("先輸入這次得到的資訊");return null;}
+      $("fsum").value=r.points.map(x=>"・"+x).join("\n");
+      $("fopp").value=r.opps.join("；");
+      $("fwarn").innerHTML=r.warn.length?`<div class="tip" style="background:var(--warn-bg)"><b style="color:var(--c-rider)">注意</b>　有 ${r.warn.length} 句可能寫到病名、證號或聯絡方式，建議改成「有體況」這類模糊寫法：${r.warn.map(esc).join("、")}</div>`:"";
+      const have=cl?.tags||[];
+      const cand=[...new Set([...r.tags,...state.settings.tags])];
+      $("ftags").innerHTML=cand.map(t=>`<button type="button" data-tag="${esc(t)}" aria-pressed="${r.tags.includes(t)||have.includes(t)}">${esc(t)}${r.tags.includes(t)&&!have.includes(t)?" ＋":""}</button>`).join("");
+      $("ftags").querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
+      $("forg").hidden=false; return r;
+    };
+    if(isMeet) $("forgBtn").onclick=()=>{if(runOrganize()) $("fsum").focus();};
+    $("ff").onsubmit=e=>{e.preventDefault();
+      const d=isMeet?ymd(today()):$("fd").value; if(!d) return toast("請選擇日期");
+      const tracking=isMeet&&$("ftrack").checked;
+      let summary="";
+      if(isMeet){
+        if($("finfo").value.trim()&&$("forg").hidden) runOrganize();   /* 忘了按整理，就自動整理 */
+        summary=$("forg").hidden?"":$("fsum").value.trim();
+        if(cl&&summary){
+          cl.note=(fmt(today()).replace(/（.）/,"")+" 見面：\n"+summary+(cl.note?"\n\n"+cl.note:"")).trim();
+          const picked=[...$("ftags").querySelectorAll('[aria-pressed="true"]')].map(b=>b.dataset.tag);
+          cl.tags=[...new Set([...(cl.tags||[]).filter(t=>picked.includes(t)||!$("ftags").querySelector(`[data-tag="${CSS.escape(t)}"]`)),...picked])];
+          for(const t of picked) if(!state.settings.tags.includes(t)) state.settings.tags.push(t);
+          const op=$("fopp").value.trim();
+          if(op) cl.opp=cl.opp?cl.opp+"；"+op:op;
+        }
+      }
+      const fp=$("fp");
+      state.followups.push({id:uid(),clientId,type,date:d,item:$("fi").value.trim(),premium:fp?fp.value.trim():undefined,...(type==="deal"?readDealOpts("f"):{}),track:isMeet?tracking:undefined,summary:summary||undefined});
+      const before=cl&&cl.stage; bumpStage(cl,type);
+      save();closeSheet();render();
+      const what=isMeet?(tracking?"已記錄見面，並啟動追蹤":"已記錄見面")+(summary?"，重點已存進筆記":""):"已建立提醒";
       toast(cl&&cl.stage!==before?what+"，客戶升為 "+cl.stage+" 級":what);};
   });
 }
