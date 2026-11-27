@@ -288,6 +288,8 @@ function load(){
   for(const c of s.clients){ if(!c.stage){ /* 舊資料：依追蹤紀錄推估階段 */
     const ts=s.followups.filter(f=>f.clientId===c.id).map(f=>f.type);
     c.stage=ts.includes("deal")?"A":ts.includes("proposal")?"B":ts.includes("meet")?"C":"D"; } }
+  /* 天數與訊息一律使用系統預設，使用者不能自行調整（只保留自訂標籤） */
+  for(const k of Object.keys(DEFAULT_SETTINGS)) if(k!=="tags") s.settings[k]=structuredCloneSafe(DEFAULT_SETTINGS[k]);
   return s;
 }
 function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){toast("無法儲存：瀏覽器封鎖了本機儲存");}}
@@ -541,8 +543,7 @@ function taskHTML(k){
     <div class="actions"><button class="btn small" data-apsnooze="${k.fid}">還沒約到，明天再提醒</button><button class="btn small" data-done="${esc(k.key)}">不用約了</button></div></article>`:
     k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button><button class="skipbtn" data-skip="${esc(k.key)}">這次沒見成，略過</button></article>`:`
     <div class="actions">
-      ${msgs.map(m=>`<button class="btn small" data-copy="${esc(m.text)}">複製${m.label?"「"+esc(m.label)+"」":"訊息"}</button>
-      <a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/nv/chat" target="_blank" rel="noopener">${m.label?"複製「"+esc(m.label)+"」並開 LINE":"複製並開 LINE"}</a>`).join("")}
+      ${msgs.map(m=>`<a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/nv/chat" target="_blank" rel="noopener">${m.label?"複製「"+esc(m.label)+"」並開 LINE":"複製並開 LINE"}</a>`).join("")}
     </div>
     <button class="donebtn" data-done="${esc(k.key)}">${k.call?"✓ 已打電話":"✓ 已聯絡"} <small>按這裡完成</small></button>
     <button class="skipbtn" data-skip="${esc(k.key)}">這次不適合聯絡，略過</button></article>`}`;
@@ -768,94 +769,29 @@ function renderClient(id){
 function renderSettings(){
   const S=state.settings;
   view.innerHTML=`
-    <div class="card">
-      <h2>LINE 草稿群組</h2>
-      <div class="field"><label for="sLG">我自己的 LINE 群組名稱</label><input id="sLG" placeholder="例：我的草稿" value="${esc(S.lineGroup||"")}">
-        <span class="hint">按「複製並開 LINE」時，會先複製訊息再打開 LINE，提示你到這個群組貼上、修改，確認好再轉傳給客戶。可以在 LINE 建一個只有自己的群組當草稿區。</span></div>
-      <div class="actions"><button class="btn" id="saveLG" type="button">儲存群組名稱</button></div>
-    </div>
     <form class="card" id="setF">
-      <div class="tip">複製訊息時<b>不會帶入客戶名字</b>。範本開頭的「{name}你好」會依複製當下的時間，自動換成「早安」「午安」或「晚安」。</div>
-      <h2>成交後的流程</h2>
-      <p class="note" style="margin:0">可用代碼：{item} 商品、{premium} 保費、{waits} 等待期、{next1}{next2} 明天和後天。沒有專屬訊息的步驟，會用下方「訊息範本 → 成交關懷」。</p>
-      ${S.dealSteps.map((st,i)=>`<div class="stepedit">
-        <div class="inline"><label for="dd_${i}">第</label><input id="dd_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
-        ${st.tip?`<span class="hint">${esc(st.tip)}</span>`:""}
-        ${st.alts?st.alts.map((a,j)=>`<label for="da_${i}_${j}" style="font-size:13px">${esc(a.label)}</label><textarea id="da_${i}_${j}" rows="4">${esc(a.tpl)}</textarea>`).join(""):st.tpl!=null?`<textarea id="dt_${i}" rows="5" aria-label="第${st.day}天訊息">${esc(st.tpl)}</textarea>`:""}</div>`).join("")}
-      <h2>成交後的等待期提醒</h2>
-      <p class="note" style="margin:0">從成交日起算。各商品等待期不同，可依實際條款調整天數。可用代碼：{item} 商品。</p>
-      ${S.waitSteps.map((st,i)=>`<div class="stepedit">
-        <div class="inline"><label for="wd_${i}">成交後第</label><input id="wd_${i}" type="number" min="1" value="${st.day}"><label>天　${esc(st.title)}</label></div>
-        <span class="hint">${esc(st.tip||"")}</span>
-        <textarea id="wtp_${i}" rows="4" aria-label="${esc(st.title)}訊息">${esc(st.tpl)}</textarea></div>`).join("")}
-      <h2>給完建議書的 5 天流程</h2>
-      <p class="note" style="margin:0">每天做一件不同的事。可用代碼：{next1}{next2} 自動帶入明天、後天的日期。</p>
-      ${S.proposalSteps.map((st,i)=>`<div class="stepedit">
-        <div class="inline"><label for="pd_${i}">第</label><input id="pd_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
-        <span class="hint">${esc(st.tip||"")}</span>
-        <textarea id="pt_${i}" rows="4" aria-label="第${st.day}天訊息">${esc(st.tpl)}</textarea></div>`).join("")}
-      <h2>見完客戶的追蹤流程（有激發興趣才啟動）</h2>
-      <p class="note" style="margin:0">只有最後一則在約他；前面幾則都在讓他覺得你值得再見一次。可用代碼：{tue}{thu} 自動帶入下週二、週四的日期。</p>
-      ${S.meetSteps.map((st,i)=>`<div class="stepedit">
-        <div class="inline"><label for="md_${i}">第</label><input id="md_${i}" type="number" min="0" value="${st.day}"><label>天　${esc(st.title)}</label></div>
-        <span class="hint">${esc(st.tip||"")}</span>
-        ${st.silent?"":`<textarea id="mt_${i}" rows="3" aria-label="第${st.day}天訊息">${esc(st.tpl)}</textarea>`}</div>`).join("")}
       <h2>客戶標籤</h2>
       <div class="field"><label for="sTags">可選的標籤</label><input id="sTags" value="${esc(S.tags.join("、"))}"><span class="hint">用頓號或逗號分隔</span></div>
-      <h2>跳歲提醒</h2>
-      <p class="note" style="margin:0">跳歲日過了就不再提醒。可用代碼：{date} 跳歲日、{tue}{thu} 下週二、週四的日期。</p>
-      ${S.ageSteps.map((st,i)=>`<div class="stepedit">
-        <div class="inline"><label for="ad_${i}">跳歲前</label><input id="ad_${i}" type="number" min="1" value="${st.lead}"><label>天　${esc(st.title)}</label></div>
-        <span class="hint">${esc(st.tip)}</span>
-        <textarea id="at_${i}" rows="4" aria-label="${esc(st.title)}訊息">${esc(st.tpl)}</textarea></div>`).join("")}
-      <h2>月配息基金進場</h2>
-      <div class="field"><label for="sF">保單簽收後第幾天提醒</label><input id="sF" type="number" min="1" value="${S.fundDays}"></div>
-      <h2>提前幾天提醒</h2>
-      <div class="inline">
-        <div class="field" style="flex:1"><label for="sA">保單週年</label><input id="sA" type="number" min="0" value="${S.anniLead}"></div>
-        <div class="field" style="flex:1"><label for="sR">批註/加費</label><input id="sR" type="number" min="0" value="${S.riderLead}"></div>
-      </div>
-      <h2>訊息範本</h2>
-      <p class="note" style="margin:0">可用代碼：{item} 商品/保單、{date} 日期、{kind} 批註或加費</p>
-      ${Object.keys(TYPES).filter(k=>!["meet","age","proposal","wait"].includes(k)).map(k=>`<div class="field"><label for="t_${k}">${TYPES[k].label}</label><textarea id="t_${k}" rows="3">${esc(S.tpl[k])}</textarea></div>`).join("")}
-      <div class="actions"><button class="btn primary" type="submit">儲存設定</button></div>
+      <div class="actions"><button class="btn primary" type="submit">儲存標籤</button></div>
     </form>
     <div class="card">
       <h2>備份與還原</h2>
-      <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼貼到 LINE 的 Keep 或記事本保存。</p>
+      <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼存到安全的地方。</p>
       <div class="actions"><button class="btn" id="exp">複製備份碼</button><button class="btn" id="imp">貼上備份碼還原</button></div>
     </div>
-    <div class="card"><h2>關於跳歲</h2><p class="note" style="margin:0">保險年齡以足歲計算，未滿 6 個月不計、超過 6 個月加 1 歲，只要輸入生日月份：跳歲月＝生日月份＋6 個月，提醒以該月 1 日計算，寧可早一點聯絡。</p></div>`;
+    <div class="card"><h2>關於跳歲</h2><p class="note" style="margin:0">保險年齡以足歲計算，未滿 6 個月不計、超過 6 個月加 1 歲。只要輸入生日月份：跳歲月＝生日月份＋6 個月，提醒以該月 1 日計算，寧可早一點聯絡。</p></div>`;
   document.getElementById("setF").onsubmit=e=>{
     e.preventDefault();
-    const nums=v=>[...new Set(v.split(/[,，\s]+/).map(Number).filter(n=>Number.isInteger(n)&&n>0))].sort((a,b)=>a-b);
-    const $=id=>document.getElementById(id);
-    S.dealSteps.forEach((st,i)=>{st.day=Math.max(0,parseInt($("dd_"+i).value)||st.day);
-      if(st.alts) st.alts.forEach((a,j)=>a.tpl=$("da_"+i+"_"+j).value); else if(st.tpl!=null) st.tpl=$("dt_"+i).value;});
-    S.dealSteps.sort((a,b)=>a.day-b.day);
-    S.fundDays=Math.max(1,parseInt($("sF").value)||12);
-    S.waitSteps.forEach((st,i)=>{st.day=Math.max(1,parseInt($("wd_"+i).value)||st.day); st.tpl=$("wtp_"+i).value;});
-    S.proposalSteps.forEach((st,i)=>{st.day=Math.max(0,parseInt($("pd_"+i).value)||0); st.tpl=$("pt_"+i).value;});
-    S.proposalSteps.sort((a,b)=>a.day-b.day);
-    S.anniLead=Math.max(0,+$("sA").value||0); S.riderLead=Math.max(0,+$("sR").value||0);
-    for(const k of Object.keys(TYPES)) if(!["meet","age","proposal","wait"].includes(k)) S.tpl[k]=$("t_"+k).value;
-    S.meetSteps.forEach((st,i)=>{st.day=Math.max(0,parseInt($("md_"+i).value)||0); if(!st.silent) st.tpl=$("mt_"+i).value;});
-    S.meetSteps.sort((a,b)=>a.day-b.day);
-    S.ageSteps.forEach((st,i)=>{st.lead=Math.max(1,parseInt($("ad_"+i).value)||st.lead); st.tpl=$("at_"+i).value;});
-    const tg=[...new Set($("sTags").value.split(/[、,，\s]+/).map(x=>x.trim()).filter(Boolean))];
-    if(tg.length) S.tags=tg;
-    save(); toast("設定已儲存"); render();
+    const tg=[...new Set(document.getElementById("sTags").value.split(/[、,，\s]+/).map(x=>x.trim()).filter(Boolean))];
+    if(!tg.length) return toast("至少要有一個標籤");
+    S.tags=tg; save(); toast("標籤已儲存");
   };
-  document.getElementById("saveLG").onclick=()=>{S.lineGroup=document.getElementById("sLG").value.trim();save();toast(S.lineGroup?"已儲存：LINE「"+S.lineGroup+"」":"已清除群組名稱");};
   document.getElementById("exp").onclick=()=>copy(JSON.stringify(state),"備份碼已複製");
   document.getElementById("imp").onclick=importSheet;
 }
 function bindCommon(){
   view.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(fillGreet(b.dataset.copy),"訊息已複製，可貼到 LINE"));
-  view.querySelectorAll("[data-line]").forEach(a=>a.onclick=()=>{
-    const g=(state.settings.lineGroup||"").trim();
-    copyQuiet(fillGreet(a.dataset.line));
-    toast(g?"已複製，到 LINE「"+g+"」貼上編輯後再轉傳":"已複製，打開 LINE 後貼上");});
+  view.querySelectorAll("[data-line]").forEach(a=>a.onclick=()=>{copyQuiet(fillGreet(a.dataset.line));toast("訊息已複製，打開 LINE 後貼上");});
   view.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openClient=b.dataset.open;render();});
   view.querySelectorAll("[data-card]").forEach(el=>el.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openClient=el.dataset.card;render();});
   view.querySelectorAll("[data-apsave]").forEach(b=>b.onclick=()=>{const v=document.getElementById("ap_"+b.dataset.apsave).value;
@@ -998,7 +934,7 @@ function followupSheet(clientId,type){
       <div class="field"><label for="fi">商品名稱${isMeet?"（可不填）":""}</label><input id="fi" placeholder="例：實支實付醫療險"></div>
       ${type==="deal"?`<div class="field"><label for="fp">保費</label><input id="fp" placeholder="例：年繳 36,000 元"></div>`:""}
       ${isMeet?"":`<div class="field"><label for="fd">日期</label><input id="fd" type="date" value="${ymd(today())}"></div>`}
-      ${isMeet?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 有激發興趣，啟動見面後追蹤（${steps.map(st=>dayLabel(st.day)).join("、")}提醒）</label><p class="note" style="margin:0">單純見面取得資訊就不用勾，只會記錄見面和整理好的重點。</p>`:`<p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息（可在設定修改）。</p>`}
+      ${isMeet?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 有激發興趣，啟動見面後追蹤（${steps.map(st=>dayLabel(st.day)).join("、")}提醒）</label><p class="note" style="margin:0">單純見面取得資訊就不用勾，只會記錄見面和整理好的重點。</p>`:`<p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息。</p>`}
       ${type==="deal"?dealOptsHTML("f"):""}
       <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">${isMeet?"儲存":"建立提醒"}</button></div>
     </form>`,()=>{
@@ -1055,7 +991,7 @@ function policySheet(clientId,p){
         <div class="actions"><button type="button" class="btn small" data-plus="6">生效後半年</button><button type="button" class="btn small" data-plus="12">生效後 1 年</button><button type="button" class="btn small" data-plus="24">生效後 2 年</button></div></div>
       <label class="inline" style="font-size:14px;font-weight:700"><input type="checkbox" id="pm" ${p.monthly?"checked":""} style="width:auto"> 月配息類型商品</label>
       <div class="field" id="pmF" ${p.monthly?"":"hidden"}><label for="ps">保單簽收日</label><input id="ps" type="date" value="${esc(p.signDate||"")}">
-        <span class="hint">簽收後第 ${state.settings.fundDays} 天提醒你告訴客戶基金已經進場（天數可在設定修改）</span></div>
+        <span class="hint">簽收後第 ${state.settings.fundDays} 天提醒你告訴客戶基金已經進場</span></div>
       <div class="field"><label for="pno">備註（例：需附健檢報告）</label><textarea id="pno" rows="2">${esc(p.note)}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
       <div class="actions">${isNew?"":`<button type="button" class="btn danger" id="pdel" style="margin-right:auto">刪除</button>`}<button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">儲存</button></div>
     </form>`,()=>{
