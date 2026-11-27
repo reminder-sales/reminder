@@ -778,8 +778,7 @@ function renderSettings(){
       <h2>備份與還原</h2>
       <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼存到安全的地方。</p>
       <div class="actions"><button class="btn" id="exp">複製備份碼</button><button class="btn" id="imp">貼上備份碼還原</button></div>
-    </div>
-    <div class="card"><h2>關於跳歲</h2><p class="note" style="margin:0">保險年齡以足歲計算，未滿 6 個月不計、超過 6 個月加 1 歲。只要輸入生日月份：跳歲月＝生日月份＋6 個月，提醒以該月 1 日計算，寧可早一點聯絡。</p></div>`;
+    </div>`;
   document.getElementById("setF").onsubmit=e=>{
     e.preventDefault();
     const tg=[...new Set(document.getElementById("sTags").value.split(/[、,，\s]+/).map(x=>x.trim()).filter(Boolean))];
