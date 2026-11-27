@@ -17,7 +17,7 @@
 :root{
   --bg:#EEF2F0; --surface:#FFFFFF; --ink:#16302A; --muted:#5A6D67; --line:#D8E1DD;
   --accent:#0F6B5C; --accent-ink:#FFFFFF; --accent-soft:#DCEDE8;
-  --c-meet:#A63D6B; --c-prop:#2F5DA8; --c-deal:#0F7A55; --c-anni:#A86200; --c-age:#6A4C9C; --c-rider:#B3362B; --c-wait:#1F6F8B; --c-fund:#5E6B10; --c-claim:#8A4B2A;
+  --c-meet:#A63D6B; --c-prop:#2F5DA8; --c-deal:#0F7A55; --c-anni:#A86200; --c-age:#6A4C9C; --c-rider:#B3362B; --c-wait:#1F6F8B; --c-fund:#5E6B10; --c-claim:#8A4B2A; --s1:#257de0; --s2:#f47230; --s3:#00b894; --s4:#f2a600;
   --warn-bg:#FBEDEA;
   --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
@@ -26,12 +26,12 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F1715; --surface:#17221F; --ink:#E4EEEA; --muted:#97AAA4; --line:#2A3833;
   --accent:#4CC2A8; --accent-ink:#06231C; --accent-soft:#1D3A33;
-  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E; --c-claim:#E3A27C;
+  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E; --c-claim:#E3A27C; --s1:#338ced; --s2:#e76624; --s3:#00a888; --s4:#d28e05;
   --warn-bg:#3A2220; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0F1715; --surface:#17221F; --ink:#E4EEEA; --muted:#97AAA4; --line:#2A3833;
   --accent:#4CC2A8; --accent-ink:#06231C; --accent-soft:#1D3A33;
-  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E; --c-claim:#E3A27C;
+  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E; --c-claim:#E3A27C; --s1:#338ced; --s2:#e76624; --s3:#00a888; --s4:#d28e05;
   --warn-bg:#3A2220; color-scheme:dark;}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -148,6 +148,28 @@ select:disabled{opacity:.45}
 .mstat b{font-family:var(--f-num);font-size:22px;line-height:1.2}
 .mstat span{font-size:12px;line-height:1.3}
 .mstat small{font-size:11px;color:var(--muted)}
+.mlink{border:none;background:none;padding:0;width:100%;cursor:pointer;font:inherit;color:inherit;text-align:center}
+.sw{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px;color:var(--ink)}
+.chartwrap{position:relative}
+.chartwrap svg{display:block;max-width:100%;touch-action:pan-y}
+.mini{display:flex;flex-direction:column;gap:2px}
+.mini+.mini{border-top:1px solid var(--line);padding-top:8px;margin-top:6px}
+.mtitle{font-size:13px;font-weight:700;display:flex;align-items:center}
+.mtitle span{margin-left:auto;font-weight:400;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.chartwrap .gl{stroke:var(--line);stroke-width:1}
+.chartwrap .ax{fill:var(--muted);font-size:10px;font-family:var(--f-num)}
+.chartwrap .xh{stroke:var(--muted);stroke-width:1;stroke-dasharray:3 3}
+.tip2{position:absolute;top:0;width:140px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 8px;font-size:12px;box-shadow:0 4px 12px rgb(0 0 0 / .15);pointer-events:none;display:flex;flex-direction:column;gap:2px}
+.tip2 small{color:var(--muted)}
+.tip2 div{display:flex;align-items:center}
+.tip2 div b{margin-left:auto;font-family:var(--f-num)}
+.stbl{width:100%;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;background:var(--surface);border-radius:10px;overflow:hidden}
+.stbl th,.stbl td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.stbl th:first-child,.stbl td:first-child{text-align:left}
+.stbl th{font-size:12px;color:var(--muted);font-weight:700}
+.stbl tr.cur td{font-weight:700;background:var(--accent-soft)}
+.stbl tr.tot td{font-weight:700}
 .saved{font-size:12px;color:var(--muted);text-align:right}
 .pcard{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .pcard .hint{font-size:12px;color:var(--muted)}
@@ -570,7 +592,7 @@ function render(){
   document.getElementById("todayLabel").innerHTML=esc(fmtY(t))+"<br>星期"+WD[t.getDay()];
   document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab&&!openClient?"page":"false"));
   if(openClient) return renderClient(openClient);
-  ({today:renderToday,upcoming:renderUpcoming,opps:renderOpps,clients:renderClients,settings:renderSettings})[tab]();
+  ({today:renderToday,upcoming:renderUpcoming,opps:renderOpps,clients:renderClients,settings:renderSettings,stats:renderStats})[tab]();
   window.scrollTo(0,0);
 }
 function taskHTML(k){
@@ -656,14 +678,73 @@ function histHTML(c){
 function tagsHTML(c){const t=c.tags||[];return t.length?`<div class="ctags">${t.map(x=>`<span class="ctag">${esc(x)}</span>`).join("")}</div>`:""}
 /* 統計週期：每月 25 日起算，到下個月 24 日 */
 function periodStart(d){return d.getDate()>=25?new Date(d.getFullYear(),d.getMonth(),25):new Date(d.getFullYear(),d.getMonth()-1,25)}
+const STAT_ITEMS=[
+  ["單純見面",f=>f.type==="meet"&&!f.track,"var(--s1)"],
+  ["見面有激發興趣",f=>f.type==="meet"&&f.track,"var(--s2)"],
+  ["遞建議書",f=>f.type==="proposal","var(--s3)"],
+  ["簽約",f=>f.type==="deal","var(--s4)"]];
+function periodCount(test,st){const en=new Date(st.getFullYear(),st.getMonth()+1,25);
+  return state.followups.filter(f=>{const d=parseD(f.date);return d>=st&&d<en&&test(f);}).length;}
 function monthStatsHTML(){
   const t=today(), st=periodStart(t), en=new Date(st.getFullYear(),st.getMonth()+1,24);
   const pst=new Date(st.getFullYear(),st.getMonth()-1,25);
-  const inP=(d,a)=>d>=a&&d<new Date(a.getFullYear(),a.getMonth()+1,25);
-  const cnt=(test,a)=>state.followups.filter(f=>inP(parseD(f.date),a)&&test(f)).length;
   const md=d=>(d.getMonth()+1)+"/"+d.getDate();
-  const items=[["單純見面",f=>f.type==="meet"&&!f.track,"var(--muted)"],["見面有激發興趣",f=>f.type==="meet"&&f.track,"var(--c-meet)"],["遞建議書",f=>f.type==="proposal","var(--c-prop)"],["簽約",f=>f.type==="deal","var(--c-deal)"]];
-  return `<section class="section"><h2>本期成果 <span style="font-weight:400;letter-spacing:0">${md(st)}～${md(en)}</span></h2><div class="mstats">${items.map(([l,fn,col])=>`<div class="mstat"><b style="color:${col}">${cnt(fn,st)}</b><span>${l}</span><small>上期 ${cnt(fn,pst)}</small></div>`).join("")}</div></section>`;
+  return `<section class="section"><h2>本期成果 <span style="font-weight:400;letter-spacing:0">${md(st)}～${md(en)}</span></h2>
+    <button class="mstats mlink" id="goStats" aria-label="看全年每月變化">${STAT_ITEMS.map(([l,fn,col])=>`<div class="mstat"><b><i class="sw" style="background:${col}"></i>${periodCount(fn,st)}</b><span>${l}</span><small>上個月 ${periodCount(fn,pst)}</small></div>`).join("")}</button>
+    <span class="hint" style="font-size:12px;color:var(--muted);text-align:right">點一下看全年每月變化 ›</span></section>`;
+}
+/* ---------- 全年趨勢（每期 = 前月 25 日～當月 24 日，以結束月份命名） ---------- */
+let statsYear=null;
+function renderStats(){
+  const t=today(), curEnd=new Date(periodStart(t).getFullYear(),periodStart(t).getMonth()+1,1);  /* 目前這期的結束月份 */
+  if(statsYear==null) statsYear=curEnd.getFullYear();
+  const Y=statsYear;
+  const months=[...Array(12)].map((_,i)=>({m:i+1,st:new Date(Y,i-1,25),future:new Date(Y,i,1)>curEnd}));
+  const series=STAT_ITEMS.map(([l,fn,col])=>({l,col,v:months.map(x=>x.future?null:periodCount(fn,x.st))}));
+  const maxV=Math.max(4,...series.flatMap(x=>x.v.filter(v=>v!=null)));
+  const step=Math.ceil(maxV/4), top=step*4;
+  /* 四個指標各畫一張小圖（同一個刻度），避免線條重疊看不清楚 */
+  const W=360,H=96,L=26,R=12,T=8,B=20, pw=W-L-R, ph=H-T-B;
+  const X=i=>L+pw*i/11, Yp=v=>T+ph*(1-v/top);
+  const mini=(sr,si)=>{const pts=sr.v.map((v,i)=>v==null?null:[X(i),Yp(v)]).filter(Boolean);
+    return `<div class="mini"><div class="mtitle"><i class="sw" style="background:${sr.col}"></i>${sr.l}<span>全年 ${sr.v.reduce((a,v)=>a+(v||0),0)}</span></div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="${Y} 年每月${sr.l}次數">
+      ${[0,2,4].map(k=>`<line x1="${L}" x2="${W-R}" y1="${Yp(k*step)}" y2="${Yp(k*step)}" class="gl"/><text x="${L-6}" y="${Yp(k*step)+3}" text-anchor="end" class="ax">${k*step}</text>`).join("")}
+      ${months.map((x,i)=>`<text x="${X(i)}" y="${H-5}" text-anchor="middle" class="ax">${x.m}</text>`).join("")}
+      <line class="xh" y1="${T}" y2="${T+ph}" x1="-10" x2="-10"/>
+      <polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${sr.col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${sr.col}" stroke="var(--surface)" stroke-width="2"/>`).join("")}
+      <rect x="${L-10}" y="0" width="${pw+20}" height="${H}" fill="transparent" class="hit"/>
+    </svg></div>`;};
+  const lastIdx=months.reduce((a,x,i)=>x.future?a:i,-1);
+  view.innerHTML=`
+    <button class="backlink" id="back">‹ 返回</button>
+    <div class="inline" style="justify-content:space-between"><h2>${Y} 年每月活動量</h2>
+      <div class="seg"><button id="yPrev" aria-label="上一年">‹ ${Y-1}</button>${Y<curEnd.getFullYear()?`<button id="yNext" aria-label="下一年">${Y+1} ›</button>`:""}</div></div>
+    <p class="note" style="margin:0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。</p>
+    <div class="card" style="gap:10px">
+      <div class="chartwrap" id="cw">${series.map(mini).join("")}<div class="tip2" id="tip2" hidden></div></div>
+      <p class="note" style="margin:0;font-size:12px">點圖上的月份可以看那個月的數字。</p>
+    </div>
+    <h2>每月數字</h2>
+    <div style="overflow-x:auto"><table class="stbl"><thead><tr><th>月份</th>${series.map(sr=>`<th>${sr.l}</th>`).join("")}</tr></thead>
+      <tbody>${months.map((x,i)=>`<tr${i===lastIdx&&Y===curEnd.getFullYear()?' class="cur"':""}><td>${x.m} 月</td>${series.map(sr=>`<td>${sr.v[i]==null?"—":sr.v[i]}</td>`).join("")}</tr>`).join("")}
+      <tr class="tot"><td>全年</td>${series.map(sr=>`<td>${sr.v.reduce((a,v)=>a+(v||0),0)}</td>`).join("")}</tr></tbody></table></div>`;
+  document.getElementById("back").onclick=()=>{tab="today";render();};
+  document.getElementById("yPrev").onclick=()=>{statsYear--;render();};
+  const yn=document.getElementById("yNext"); if(yn) yn.onclick=()=>{statsYear++;render();};
+  const tip=document.getElementById("tip2"), cw=document.getElementById("cw"), xhs=[...view.querySelectorAll(".xh")];
+  const hide=()=>{tip.hidden=true;xhs.forEach(l=>{l.setAttribute("x1",-10);l.setAttribute("x2",-10);});};
+  const show=e=>{const svg=e.currentTarget.ownerSVGElement, r=svg.getBoundingClientRect(), x=(e.clientX-r.left)*W/r.width;
+    let i=Math.round((x-L)/pw*11); i=Math.max(0,Math.min(11,i));
+    if(months[i].future) return hide();
+    xhs.forEach(l=>{l.setAttribute("x1",X(i));l.setAttribute("x2",X(i));});
+    const st=months[i].st, en=new Date(Y,i,24);
+    tip.innerHTML=`<b>${months[i].m} 月</b><small>${st.getMonth()+1}/25～${en.getMonth()+1}/24</small>`+series.map(sr=>`<div><i class="sw" style="background:${sr.col}"></i>${sr.l}<b>${sr.v[i]}</b></div>`).join("");
+    tip.hidden=false; const cr=cw.getBoundingClientRect(), px=X(i)/W*r.width;
+    tip.style.left=(px>r.width/2?px-150:px+10)+"px"; tip.style.top=Math.max(0,r.top-cr.top-10)+"px";};
+  view.querySelectorAll(".hit").forEach(h=>{h.addEventListener("pointermove",show);h.addEventListener("pointerdown",show);h.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse")hide();});});
+  window.scrollTo(0,0);
 }
 function renderToday(){
   const t=today(), all=buildTasks();
@@ -684,6 +765,7 @@ function renderToday(){
       ${state.recent.map(r=>`<div class="recent"><span><b>${esc(r.who)}</b>．${esc(r.what)}．${r.skip?"略過":"已聯絡"}．${fmt(new Date(r.at))}</span><button class="btn small" data-undo="${esc(r.key)}">改回未聯絡</button></div>`).join("")}
     </section>`:""}`;
   bindCommon();
+  document.getElementById("goStats").onclick=()=>{statsYear=null;tab="stats";render();};
   const go=document.getElementById("goOpps"); if(go) go.onclick=()=>{tab="opps";render();};
   const cs=document.getElementById("clearSeed");
   if(cs) cs.onclick=()=>confirmSheet("清除所有範例客戶？","你自己新增的客戶不會被刪除。",()=>{
