@@ -143,6 +143,11 @@ select:disabled{opacity:.45}
 .tl{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px}
 .tl span.ev{border-radius:10px;padding:1px 8px;background:var(--bg);color:var(--tc);border:1px solid var(--tc);white-space:nowrap}
 .tl i{color:var(--muted);font-style:normal}
+.mstats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.mstat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;display:flex;flex-direction:column;gap:2px;min-width:0}
+.mstat b{font-family:var(--f-num);font-size:22px;line-height:1.2}
+.mstat span{font-size:12px;line-height:1.3}
+.mstat small{font-size:11px;color:var(--muted)}
 .saved{font-size:12px;color:var(--muted);text-align:right}
 .pcard{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .pcard .hint{font-size:12px;color:var(--muted)}
@@ -628,6 +633,12 @@ function histHTML(c){
     <div class="tl">${shown.join("<i>→</i>")}</div></div></section>`;
 }
 function tagsHTML(c){const t=c.tags||[];return t.length?`<div class="ctags">${t.map(x=>`<span class="ctag">${esc(x)}</span>`).join("")}</div>`:""}
+function monthStatsHTML(){
+  const t=today(), ym=d=>d.getFullYear()*12+d.getMonth(), cur=ym(t);
+  const cnt=(test,off)=>state.followups.filter(f=>ym(parseD(f.date))===cur-off&&test(f)).length;
+  const items=[["單純見面",f=>f.type==="meet"&&!f.track,"var(--muted)"],["見面有激發興趣",f=>f.type==="meet"&&f.track,"var(--c-meet)"],["遞建議書",f=>f.type==="proposal","var(--c-prop)"],["簽約",f=>f.type==="deal","var(--c-deal)"]];
+  return `<section class="section"><h2>${t.getMonth()+1} 月成果</h2><div class="mstats">${items.map(([l,fn,col])=>`<div class="mstat"><b style="color:${col}">${cnt(fn,0)}</b><span>${l}</span><small>上月 ${cnt(fn,1)}</small></div>`).join("")}</div></section>`;
+}
 function renderToday(){
   const t=today(), all=buildTasks();
   const due=all.filter(k=>k.due<=t);
@@ -637,8 +648,9 @@ function renderToday(){
   view.innerHTML=`
     ${state.opps.filter(o=>!o.done).length?`<div class="banner"><span>早會商機還有 <b>${state.opps.filter(o=>!o.done).length}</b> 筆未處理</span><button class="btn small" id="goOpps">查看</button></div>`:""}
     ${state.seeded?`<div class="banner"><span>目前顯示的是<b>範例客戶</b>，看懂之後可以一鍵清除。</span><button class="btn small" id="clearSeed">清除範例</button></div>`:""}
-    ${sum?`<div class="summary">${sum}</div>`:""}
+    ${monthStatsHTML()}
     <section class="section"><h2>今天要聯絡 <span class="count">${due.length}</span></h2>
+      ${sum?`<div class="summary">${sum}</div>`:""}
       ${due.length?due.map(taskHTML).join(""):`<div class="empty">今天沒有待辦。<br>見完客戶後按下方「＋」新增。</div>`}
     </section>
     ${state.recent.length?`<section class="section"><h2>最近處理過的 <span class="count">${state.recent.length}</span></h2>
