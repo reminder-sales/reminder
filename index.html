@@ -533,6 +533,7 @@ function taskHTML(k){
   return `<article class="task ${late?"overdue":""}" style="--tc:${ty.color}" data-card="${k.c.id}" title="點一下打開客戶資料">
     <div class="row1"><span class="chip">${ty.label}</span>${stageHTML(k.c)}<span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span><span class="go" aria-hidden="true">›</span></div>
     <div class="detail">${esc(k.detail)}</div>
+    ${k.moreLater?`<div class="detail" style="font-weight:700">之後還有 ${k.moreLater} 則同一個追蹤，完成這則後會接著出現</div>`:""}
     ${k.tip?`<div class="tip"><b>訣竅</b>　${esc(k.tip)}</div>`:""}
     ${k.c.opp?`<div class="detail" style="color:var(--c-anni);font-weight:700">商機：${esc(k.c.opp)}</div>`:""}
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
@@ -589,9 +590,13 @@ function renderToday(){
     state.seeded=false; save(); render(); toast("已清除範例");
   });
 }
+/* 同一位客戶、同一個追蹤主題（同一筆見面／建議書／成交、同一張保單、跳歲）歸成一組 */
+function grpKey(k){const p=k.key.split(":");return p[0]==="fd"&&p[1]==="f"?p.slice(0,3).join(":"):p.slice(0,2).join(":")}
 function renderUpcoming(){
   const t=today(), end=addDays(t,range);
-  const list=buildTasks().filter(k=>k.due>t&&k.due<=end);
+  const all=buildTasks().filter(k=>k.due>t&&k.due<=end), more={}, list=[];
+  for(const k of all){const g=grpKey(k); if(g in more) more[g]++; else {more[g]=0; list.push(k);}}
+  for(const k of list) k.moreLater=more[grpKey(k)];
   view.innerHTML=`
     <div class="inline" style="justify-content:space-between;flex-wrap:wrap"><h2>即將到來 <span class="count">${list.length}</span></h2>
     <div class="seg">${[7,30,90].map(n=>`<button data-range="${n}" aria-pressed="${n===range}">${n} 天</button>`).join("")}</div></div>
@@ -763,6 +768,12 @@ function renderClient(id){
 function renderSettings(){
   const S=state.settings;
   view.innerHTML=`
+    <div class="card">
+      <h2>LINE 草稿群組</h2>
+      <div class="field"><label for="sLG">我自己的 LINE 群組名稱</label><input id="sLG" placeholder="例：我的草稿" value="${esc(S.lineGroup||"")}">
+        <span class="hint">按「複製並開 LINE」時，會先複製訊息再打開 LINE，提示你到這個群組貼上、修改，確認好再轉傳給客戶。可以在 LINE 建一個只有自己的群組當草稿區。</span></div>
+      <div class="actions"><button class="btn" id="saveLG" type="button">儲存群組名稱</button></div>
+    </div>
     <form class="card" id="setF">
       <div class="tip">複製訊息時<b>不會帶入客戶名字</b>。範本開頭的「{name}你好」會依複製當下的時間，自動換成「早安」「午安」或「晚安」。</div>
       <h2>成交後的流程</h2>
@@ -809,12 +820,6 @@ function renderSettings(){
       ${Object.keys(TYPES).filter(k=>!["meet","age","proposal","wait"].includes(k)).map(k=>`<div class="field"><label for="t_${k}">${TYPES[k].label}</label><textarea id="t_${k}" rows="3">${esc(S.tpl[k])}</textarea></div>`).join("")}
       <div class="actions"><button class="btn primary" type="submit">儲存設定</button></div>
     </form>
-    <div class="card">
-      <h2>LINE 草稿群組</h2>
-      <div class="field"><label for="sLG">我自己的 LINE 群組名稱</label><input id="sLG" placeholder="例：我的草稿" value="${esc(S.lineGroup||"")}">
-        <span class="hint">按「複製並開 LINE」時，會先複製訊息再打開 LINE，提示你到這個群組貼上、修改，確認好再轉傳給客戶。可以在 LINE 建一個只有自己的群組當草稿區。</span></div>
-      <div class="actions"><button class="btn" id="saveLG" type="button">儲存群組名稱</button></div>
-    </div>
     <div class="card">
       <h2>備份與還原</h2>
       <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼貼到 LINE 的 Keep 或記事本保存。</p>
