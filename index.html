@@ -587,12 +587,15 @@ function applyStageRules(){
   }
   if(changed){save(); setTimeout(()=>toast(changed+" 位客戶成交已滿半年，階段已自動調整"),300);}
 }
+let shownClient=null;
 function render(){
   applyStageRules();
   const t=today();
   document.getElementById("todayLabel").innerHTML=esc(fmtY(t))+"<br>星期"+WD[t.getDay()];
   document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.tab===tab&&!openClient?"page":"false"));
-  if(openClient) return renderClient(openClient);
+  /* 打開另一位客戶時回到頁面最上面；同一位客戶頁面內的修改不跳動 */
+  if(openClient){const fresh=openClient!==shownClient; shownClient=openClient; renderClient(openClient); if(fresh) window.scrollTo(0,0); return;}
+  shownClient=null;
   ({today:renderToday,upcoming:renderUpcoming,opps:renderOpps,clients:renderClients,settings:renderSettings,stats:renderStats})[tab]();
   window.scrollTo(0,0);
 }
