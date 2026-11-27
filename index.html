@@ -585,6 +585,23 @@ function keyClient(k){
 }
 function skipCount(c){return Object.keys(state.skipped).filter(k=>keyClient(k)===c.id).length}
 function skipCountHTML(c){const n=skipCount(c);return `<span class="skipcnt ${n>=3?"many":""}">這位客戶已略過 ${n} 次</span>`}
+/* 還有待辦提醒的紀錄才算「追蹤中」；其他收合起來 */
+let fuOldOpen=false;
+function activeFuIds(){
+  const ids=new Set();
+  for(const k of buildTasks()){const p=k.key.split(":");
+    if(["fu","wt","ap","vs","cl"].includes(p[0])) ids.add(p[1]);
+    if(p[0]==="fd"&&p[1]==="f") ids.add(p[2]);}
+  for(const f of state.followups) if(f.type==="deal"&&f.monthly&&!f.signDate) ids.add(f.id);  /* 還沒填簽收日 */
+  return ids;
+}
+function fuListHTML(fus,card){
+  if(!fus.length) return `<div class="empty">尚無追蹤紀錄</div>`;
+  const act=activeFuIds(), on=fus.filter(f=>act.has(f.id)), off=fus.filter(f=>!act.has(f.id));
+  return (on.length?on.map(card).join(""):`<div class="empty">目前沒有進行中的追蹤</div>`)+
+    (off.length?`<details id="fuOld" ${fuOldOpen?"open":""}><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);padding:4px 0">已結束或只有見面的紀錄（${off.length} 筆）</summary>
+      <div class="section" style="margin-top:8px">${off.map(card).join("")}</div></details>`:"");
+}
 function claimCardHTML(f){
   const log=f.log||[];
   return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:var(--c-claim);color:var(--tc);border-color:var(--tc)">理賠追蹤</span><b>${esc(f.item||"")}</b><span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(parseD(f.date))} 送件</span></div>
@@ -750,7 +767,7 @@ function renderClient(id){
     </div>
     <section class="section"><div class="inline" style="justify-content:space-between"><h2>追蹤流程</h2></div>
       <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button><button class="btn" data-addfu="claim">＋ 辦理賠</button></div>
-      ${fus.map(f=>{if(f.type==="claim") return claimCardHTML(f);const steps=flow(f.type);const base=parseD(f.date);
+      ${fuListHTML(fus,f=>{if(f.type==="claim") return claimCardHTML(f);const steps=flow(f.type);const base=parseD(f.date);
         return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${f.type==="meet"&&!f.track?"見面紀錄":TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
         ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
@@ -762,7 +779,7 @@ function renderClient(id){
         ${f.type==="deal"&&f.monthly?`<div class="detail">月配息${f.amount?"：每月約 "+esc(f.amount):""}</div>
           <div class="inline"><label for="sd_${f.id}" style="font-size:13px;white-space:nowrap">保單簽收日</label><input type="date" id="sd_${f.id}" data-sign="${f.id}" value="${esc(f.signDate||"")}" style="flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"></div>
           <span class="detail">${f.signDate?fmtY(addDays(parseD(f.signDate),state.settings.fundDays))+" 會提醒你告訴客戶基金已進場":"填了簽收日，才會提醒基金進場"}</span>`:""}
-        <div class="actions">${f.type==="meet"?`<button class="btn small" data-track="${f.id}">停止追蹤</button>`:""}<button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`}`}).join("")||`<div class="empty">尚無追蹤紀錄</div>`}
+        <div class="actions">${f.type==="meet"?`<button class="btn small" data-track="${f.id}">停止追蹤</button>`:""}<button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`}`})}
     </section>
     <section class="section"><h2>客戶資料</h2><div class="card">
       <div class="field"><label for="iOpp">商機</label><textarea id="iOpp" rows="2" placeholder="例：明年想換車、孩子要出國念書、考慮買房">${esc(c.opp||"")}</textarea>
@@ -826,6 +843,7 @@ function renderClient(id){
     if(f.claimDone){delete f.claimDone;f.nextCheck=ymd(addDays(today(),2));f.log.push({date:ymd(today()),text:"重新開啟"});}
     else {f.claimDone=ymd(today());f.log.push({date:ymd(today()),text:"理賠完成"});}
     save();renderClient(id);toast(f.claimDone?"理賠已結案":"已重新開啟，兩天後提醒你檢查");});
+  const fo=document.getElementById("fuOld"); if(fo) fo.ontoggle=()=>{fuOldOpen=fo.open;};
   view.querySelectorAll("[data-track]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.track);f.track=!f.track;save();renderClient(id);toast(f.track?"已啟動見面後追蹤":"已停止追蹤");});
   view.querySelectorAll("[data-delfu]").forEach(b=>b.onclick=()=>confirmSheet("刪除這筆追蹤？","",()=>{state.followups=state.followups.filter(f=>f.id!==b.dataset.delfu);save();renderClient(id);}));
   document.getElementById("delC").onclick=()=>confirmSheet("刪除「"+c.name+"」？","這位客戶的追蹤與保單資料都會一起刪除。",()=>{
