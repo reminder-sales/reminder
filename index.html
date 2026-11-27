@@ -233,6 +233,7 @@ function load(){
   s.settings.tpl=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS.tpl),(s.settings&&s.settings.tpl)||{});
   s.done=s.done||{};
   s.opps=s.opps||[];
+  for(const c of s.clients) if(c.bday&&c.bday.length>2) c.bday=c.bday.slice(0,2);  /* 生日改成只存月份 */
   /* 舊設定升級：成交第 1 天訊息加入月配息、基金進場訊息加入金額 */
   if(s.settings.tpl.fund==="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。之後每月配息入帳的時間和查詢方式，我再整理給您，有任何問題隨時問我！") s.settings.tpl.fund="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給您，有任何問題隨時問我！";
   const d1=(s.settings.dealSteps||[]).find(x=>x.day===1);
@@ -289,18 +290,17 @@ function fmt(d){return (d.getMonth()+1)+"/"+d.getDate()+"（"+WD[d.getDay()]+"�
 function fmtY(d){return d.getFullYear()+"/"+(d.getMonth()+1)+"/"+d.getDate()}
 function clampDate(y,m,d){const last=new Date(y,m+1,0).getDate();return new Date(y,m,Math.min(d,last))}
 /* 跳歲日 = 生日 + 6 個月（保險年齡以足歲計，超過 6 個月加 1 歲） */
+/* 生日只存月份：跳歲月＝生日月份＋6 個月，提醒以跳歲月的 1 日計算（最早可能跳歲的日子） */
+function bMonth(bday){return parseInt(String(bday).slice(0,2),10)}
 function nextAgeJump(bday,from){
-  const [m,d]=bday.split("-").map(Number);
+  const m=bMonth(bday);
   for(let y=from.getFullYear()-1;y<=from.getFullYear()+1;y++){
     let mm=m-1+6, yy=y; if(mm>11){mm-=12;yy++;}
-    const j=clampDate(yy,mm,d);
+    const j=new Date(yy,mm,1);
     if(j>=from) return j;
   }
 }
-function nextBirthday(bday,from){
-  const [m,d]=bday.split("-").map(Number);
-  for(let y=from.getFullYear();y<=from.getFullYear()+1;y++){const b=clampDate(y,m-1,d); if(b>=from) return b;}
-}
+function ymText(d){return d.getFullYear()+" 年 "+(d.getMonth()+1)+" 月"}
 function nextAnniversary(eff,from){
   const e=parseD(eff);
   for(let y=Math.max(e.getFullYear()+1,from.getFullYear()-1);y<=from.getFullYear()+2;y++){
@@ -311,10 +311,10 @@ function nextAnniversary(eff,from){
 /* ---------- 範例資料（首次開啟） ---------- */
 function seed(s){
   const t=today();
-  const c1={id:uid(),name:"陳Ｏ華",bday:pad2(t.getMonth()+1)+"-"+pad2(Math.min(t.getDate(),28)),note:"喜歡下午聯絡，老大明年上小學",tags:["有小孩","有車"],stage:"C",example:true};
+  const c1={id:uid(),name:"陳Ｏ華",bday:pad2(t.getMonth()+1),note:"喜歡下午聯絡，老大明年上小學",tags:["有小孩","有車"],stage:"C",example:true};
   const jb=addDays(t,20); const back=new Date(jb); back.setMonth(back.getMonth()-6);
-  const c2={id:uid(),name:"林Ｏ婷",bday:pad2(back.getMonth()+1)+"-"+pad2(back.getDate()),note:"考慮醫療險升級",tags:["愛出國","體況"],stage:"B",example:true};
-  const c3={id:uid(),name:"王ＯＯ",bday:"03-15",note:"公司主管，重視退休規劃",tags:["股票","儲蓄險愛用戶"],stage:"A",example:true};
+  const c2={id:uid(),name:"林Ｏ婷",bday:pad2(back.getMonth()+1),note:"考慮醫療險升級",tags:["愛出國","體況"],stage:"B",example:true};
+  const c3={id:uid(),name:"王ＯＯ",bday:"03",note:"公司主管，重視退休規劃",tags:["股票","儲蓄險愛用戶"],stage:"A",example:true};
   s.clients.push(c1,c2,c3);
   s.followups.push({id:uid(),clientId:c1.id,type:"meet",date:ymd(addDays(t,-3)),item:"",track:true});
   s.followups.push({id:uid(),clientId:c2.id,type:"proposal",date:ymd(addDays(t,-3)),item:"實支實付醫療險"});
@@ -456,7 +456,7 @@ function buildTasks(){
       const due=addDays(j,-st.lead), nxt=steps[i+1];
       if(nxt&&t>=addDays(j,-nxt.lead)) return;  /* 下一階段開始後，前一階段不再顯示 */
       out.push({key,type:"age",c,due,target:j,tip:st.tip,stepTpl:st.tpl,
-        detail:"跳歲前 "+st.lead+" 天 · "+st.title+" · 生日 "+c.bday.replace("-","/")+"，"+fmtY(j)+" 保險年齡 +1"});
+        dateText:ymText(j),detail:"跳歲前 "+st.lead+" 天 · "+st.title+" · 生日 "+bMonth(c.bday)+" 月，"+ymText(j)+" 保險年齡 +1"});
     });
   }
   out.sort((a,b)=>a.due-b.due);
@@ -471,7 +471,7 @@ function message(task){
   tpl=tpl.replaceAll("{name}","").replaceAll("您","你");
   const sl=slots(task.due);
   return tpl.replaceAll("{next1}",fmt(addDays(task.due,1))).replaceAll("{next2}",fmt(addDays(task.due,2))).replaceAll("{tue}",sl.tue).replaceAll("{thu}",sl.thu).replaceAll("{name}",task.c.name).replaceAll("{item}",task.item||"保單")
-    .replaceAll("{date}",fmtY(task.target)).replaceAll("{kind}",task.kind||"")
+    .replaceAll("{date}",task.dateText||fmtY(task.target)).replaceAll("{kind}",task.kind||"")
     .replaceAll("{premium}",task.premium||"（保費）").replaceAll("{waits}",task.waits||"無")
     .replaceAll("{health}",task.health?"\n・體況：這次可能會有體況的照會，所以不會馬上扣款；後續需要補病歷的話我會直接聯絡你。":"")
     .replaceAll("{monthly}",task.monthly?"\n・月配息：每月約 "+(task.amount||"（金額）"):"").replaceAll("{amount}",task.amount||"（金額）");
@@ -627,7 +627,7 @@ function renderClientList(){
     ${list.map(c=>{
       const nP=state.policies.filter(p=>p.clientId===c.id).length;
       return `<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}" title="${STAGES[c.stage||"D"].label}">${c.stage||"D"}</span>
-        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>${c.bdayUnknown?"不知道生日":"生日 "+esc((c.bday||"--").replace("-","/"))} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${c.opp?`<span class="oppline">商機：${esc(c.opp)}</span>`:""}${tagsHTML(c)}</span></button>`;}).join("")}
+        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>${c.bdayUnknown?"不知道生日":(c.bday?"生日 "+bMonth(c.bday)+" 月":"生日未填")} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${c.opp?`<span class="oppline">商機：${esc(c.opp)}</span>`:""}${tagsHTML(c)}</span></button>`;}).join("")}
     ${!list.length?`<div class="empty">${q||filtered?"找不到符合的客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`:""}
     ${hidden>0?`<div class="banner"><span>另有 <b>${hidden}</b> 位符合搜尋，但被上方的篩選條件擋住了</span><button class="btn small" id="clrF">清除篩選</button></div>`:""}`;
   const cf=document.getElementById("clrF"); if(cf) cf.onclick=()=>{stageFilter="";tagFilter="";renderClients();};
@@ -638,7 +638,7 @@ function renderClient(id){
   const t=today();
   const fus=state.followups.filter(f=>f.clientId===id).sort((a,b)=>b.date.localeCompare(a.date));
   const pols=state.policies.filter(p=>p.clientId===id);
-  const jump=c.bday?nextAgeJump(c.bday,t):null, bd=c.bday?nextBirthday(c.bday,t):null;
+  const jump=c.bday?nextAgeJump(c.bday,t):null;
   const S=state.settings;
   view.innerHTML=`
     <button class="backlink" id="back">‹ 返回</button>
@@ -648,11 +648,10 @@ function renderClient(id){
       <span class="err" id="iErr"></span>
       <div class="field"><label>客戶階段</label>${stagePick("dStage",c.stage||"D")}
         ${c.stageAutoOn&&c.stage!=="A"?`<span class="hint">${fmtY(parseD(c.stageAutoOn))} 因成交滿半年自動調整</span>`:""}</div>
-      <div class="field"><label>生日（只填月、日）</label>
-        <div class="inline"><select id="iBm" aria-label="月" style="flex:1" ${c.bdayUnknown?"disabled":""}><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${(c.bday||"").slice(0,2)===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select>
-        <select id="iBd" aria-label="日" style="flex:1" ${c.bdayUnknown?"disabled":""}><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${pad2(i+1)}" ${(c.bday||"").slice(3)===pad2(i+1)?"selected":""}>${i+1} 日</option>`).join("")}</select></div>
+      <div class="field"><label>生日月份</label>
+        <div class="inline"><select id="iBm" aria-label="月" style="flex:1" ${c.bdayUnknown?"disabled":""}><option value="">選擇月份</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${(c.bday||"").slice(0,2)===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select></div>
         <label class="inline bdu"><input type="checkbox" id="iBdu" ${c.bdayUnknown?"checked":""}> 不知道生日</label>
-        <span class="hint">${c.bdayUnknown?"還不知道生日，下次聯絡時記得問一下":jump?"下次生日 "+fmt(bd)+"．跳歲日 "+fmtY(jump)+"（還有 "+diff(jump,t)+" 天）":"填了生日就會自動算跳歲日"}</span></div>
+        <span class="hint">${c.bdayUnknown?"還不知道生日，下次聯絡時記得問一下":jump?"跳歲月："+ymText(jump)+"（約 "+diff(jump,t)+" 天後）":"填了生日月份就會自動算跳歲月"}</span></div>
       <div class="field"><label>標籤（點一下選取／取消）</label>
         <div class="tagpick" id="iTags">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="inline"><input id="iNewTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="iAddTag">加入</button></div></div>
@@ -695,12 +694,8 @@ function renderClient(id){
     if(!v){nm.value=c.name;document.getElementById("iErr").textContent="姓名不能空白";return;}
     if(!MASK.test(v)){v=autoMask(v);toast("已自動遮罩為 "+v);}
     c.name=v;save();renderClient(id);savedMsg();};
-  const bm=document.getElementById("iBm"), bdd=document.getElementById("iBd");
-  bm.onchange=bdd.onchange=()=>{const m=bm.value,d=bdd.value;
-    if(!m&&!d){c.bday="";save();renderClient(id);savedMsg();return;}
-    if(!m||!d) return;
-    if(+d>new Date(2024,+m,0).getDate()){toast("這個月沒有 "+(+d)+" 日");return;}
-    c.bday=m+"-"+d;c.bdayUnknown=false;save();renderClient(id);savedMsg();};
+  const bm=document.getElementById("iBm");
+  bm.onchange=()=>{c.bday=bm.value; if(bm.value) c.bdayUnknown=false; save();renderClient(id);savedMsg();};
   document.getElementById("iBdu").onchange=e=>{c.bdayUnknown=e.target.checked; if(c.bdayUnknown) c.bday=""; save();renderClient(id);savedMsg();};
   const it=document.getElementById("iTags");
   const syncTags=()=>{c.tags=[...it.querySelectorAll('[aria-pressed="true"]')].map(b=>b.dataset.tag);save();savedMsg();};
@@ -785,7 +780,7 @@ function renderSettings(){
       <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼貼到 LINE 的 Keep 或記事本保存。</p>
       <div class="actions"><button class="btn" id="exp">複製備份碼</button><button class="btn" id="imp">貼上備份碼還原</button></div>
     </div>
-    <div class="card"><h2>關於跳歲</h2><p class="note" style="margin:0">保險年齡以足歲計算，未滿 6 個月不計、超過 6 個月加 1 歲，所以「跳歲日」＝生日後 6 個月。只輸入月和日就能算出。</p></div>`;
+    <div class="card"><h2>關於跳歲</h2><p class="note" style="margin:0">保險年齡以足歲計算，未滿 6 個月不計、超過 6 個月加 1 歲，只要輸入生日月份：跳歲月＝生日月份＋6 個月，提醒以該月 1 日計算，寧可早一點聯絡。</p></div>`;
   document.getElementById("setF").onsubmit=e=>{
     e.preventDefault();
     const nums=v=>[...new Set(v.split(/[,，\s]+/).map(Number).filter(n=>Number.isInteger(n)&&n>0))].sort((a,b)=>a-b);
@@ -845,17 +840,16 @@ function autoMask(n){
 }
 function clientSheet(c){
   const isNew=!c; c=c||{name:"",bday:"",note:""};
-  const [bm,bd]=(c.bday||"-").split("-");
+  const bm=(c.bday||"").slice(0,2);
   openSheet(`<h3>${isNew?"新增客戶":"編輯客戶"}</h3>
     <form id="cf" style="display:flex;flex-direction:column;gap:14px">
       <div class="field"><label for="cn">客戶姓名（中間用 Ｏ）</label>
         <div class="inline"><input id="cn" value="${esc(c.name)}" placeholder="例：陳Ｏ華" autocomplete="off" style="flex:1"><button type="button" class="btn" id="mask">自動遮罩</button></div>
         <span class="hint">忘了遮罩也沒關係，按儲存時會自動變成 陳Ｏ華，不會存完整姓名。</span><span class="err" id="cnErr"></span></div>
-      <div class="field"><label>生日（只填月、日）</label>
-        <div class="inline"><select id="bm" aria-label="月" style="flex:1"><option value="">月</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${bm===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select>
-        <select id="bd" aria-label="日" style="flex:1"><option value="">日</option>${Array.from({length:31},(_,i)=>`<option value="${pad2(i+1)}" ${bd===pad2(i+1)?"selected":""}>${i+1} 日</option>`).join("")}</select></div>
+      <div class="field"><label>生日月份（只填月份）</label>
+        <div class="inline"><select id="bm" aria-label="月" style="flex:1"><option value="">選擇月份</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${bm===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select></div>
         <label class="inline bdu"><input type="checkbox" id="bdu" ${c.bdayUnknown?"checked":""}> 不知道生日</label>
-        <span class="hint">用來計算跳歲日，不需要年份。</span></div>
+        <span class="hint">用來計算跳歲月，不需要年份和日期。</span></div>
       <div class="field"><label>客戶階段（必選）</label>${stagePick("sp",isNew?"":c.stage||"D")}<span class="err" id="spErr"></span></div>
       <div class="field"><label>標籤（可複選）</label>
         <div class="tagpick" id="tp">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
@@ -871,8 +865,8 @@ function clientSheet(c){
     </form>`,()=>{
     const cn=document.getElementById("cn");
     document.getElementById("mask").onclick=()=>{if(cn.value.trim()&&!MASK.test(cn.value))cn.value=autoMask(cn.value);};
-    const bdu=document.getElementById("bdu"), bmS=document.getElementById("bm"), bdS=document.getElementById("bd");
-    const syncBdu=()=>{bmS.disabled=bdS.disabled=bdu.checked; if(bdu.checked){bmS.value="";bdS.value="";}};
+    const bdu=document.getElementById("bdu"), bmS=document.getElementById("bm");
+    const syncBdu=()=>{bmS.disabled=bdu.checked; if(bdu.checked) bmS.value="";};
     bdu.onchange=syncBdu; syncBdu();
     bindDealOpts("n");
     const sp=document.getElementById("sp");
@@ -894,11 +888,9 @@ function clientSheet(c){
       let name=cn.value.trim().replace(/\s+/g,"").replace(/[O○〇◯ｏ]/g,"Ｏ"), err=document.getElementById("cnErr"), masked=false;
       if(!name){err.textContent="請輸入姓名";return;}
       if(!MASK.test(name)){name=autoMask(name);cn.value=name;masked=true;}
-      const m=document.getElementById("bm").value, d=document.getElementById("bd").value;
-      if((m&&!d)||(!m&&d)){err.textContent="生日的月、日要一起填";return;}
-      if(m&&d&&+d>new Date(2024,+m,0).getDate()){err.textContent="這個月沒有 "+(+d)+" 日";return;}
+      const m=document.getElementById("bm").value;
       const stage=curStage(); if(!stage){document.getElementById("spErr").textContent="請選擇客戶階段（A／B／C／D）";return;}
-      const data={name,stage,bday:m&&d?m+"-"+d:"",bdayUnknown:bdu.checked,note:document.getElementById("cnote").value.trim(),opp:document.getElementById("copp")?document.getElementById("copp").value.trim():(c.opp||""),
+      const data={name,stage,bday:m||"",bdayUnknown:bdu.checked,note:document.getElementById("cnote").value.trim(),opp:document.getElementById("copp")?document.getElementById("copp").value.trim():(c.opp||""),
         tags:[...tp.querySelectorAll('[data-tag][aria-pressed="true"]')].map(b=>b.dataset.tag)};
       let id;
       if(isNew){id=uid();state.clients.push(Object.assign({id},data));
