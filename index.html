@@ -916,11 +916,12 @@ function renderClient(id){
           return `<button class="step ${state.skipped[k]?"skip":done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title||fmtY(dd))}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()}${state.skipped[k]?" 略過":""}</button>`}).join("")}</div>
         ${dealWaits(f).length?`<div class="detail">等待期</div><div class="steps">${dealWaits(f).map(st=>{const k="wt:"+f.id+":"+st.day,dd=addDays(base,st.day),done=state.done[k];
           return `<button class="step ${done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title)}">${esc(st.title.replace("等待期結束",""))} ${fmtY(dd)}</button>`}).join("")}</div>`:""}
-        ${f.type==="meet"&&f.track?`<div class="inline"><label for="apx_${f.id}" style="font-size:13px;white-space:nowrap">預定見面</label><input type="datetime-local" id="apx_${f.id}" data-appt="${f.id}" value="${esc(f.appt||"")}" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"></div>`:""}
-        ${f.type==="deal"?(f.rider?`<div class="inline"><label for="rdx_${f.id}" style="font-size:13px;white-space:nowrap">批註／加費可複查</label><input type="date" id="rdx_${f.id}" data-rider="${f.id}" value="${esc(f.riderDate||"")}" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small" data-riderdel="${f.id}">移除</button></div>
+        ${f.type==="meet"&&f.track?`<div class="inline"><label for="apx_${f.id}" style="font-size:13px;white-space:nowrap">預定見面</label><input type="datetime-local" id="apx_${f.id}" value="${esc(f.appt||"")}" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small" data-dsave="appt:${f.id}">儲存</button>${f.appt?`<button class="btn small" data-dclear="appt:${f.id}">清除</button>`:""}</div>
+          <span class="detail">${f.appt?"已排定，見面當天會提醒你":"選好時間後按「儲存」；不小心點到，不按儲存就好"}</span>`:""}
+        ${f.type==="deal"?(f.rider?`<div class="inline"><label for="rdx_${f.id}" style="font-size:13px;white-space:nowrap">批註／加費可複查</label><input type="date" id="rdx_${f.id}" value="${esc(f.riderDate||"")}" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small" data-dsave="rider:${f.id}">儲存</button>${f.riderDate?`<button class="btn small" data-dclear="rider:${f.id}">清除</button>`:""}<button class="btn small" data-riderdel="${f.id}">移除</button></div>
           <span class="detail">${f.riderDate?fmtY(addDays(parseD(f.riderDate),-state.settings.riderLead))+" 會提醒你進公司查詢後處理":"填了日期才會提醒"}</span>`:`<button class="btn small" data-rideradd="${f.id}" style="align-self:flex-start">＋ 有批註／加費？設定複查日</button>`):""}
         ${f.type==="deal"&&f.monthly?`<div class="detail">月配息${f.amount?"：每月約 "+esc(f.amount):""}</div>
-          <div class="inline"><label for="sd_${f.id}" style="font-size:13px;white-space:nowrap">保單簽收日</label><input type="date" id="sd_${f.id}" data-sign="${f.id}" value="${esc(f.signDate||"")}" style="flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"></div>
+          <div class="inline"><label for="sd_${f.id}" style="font-size:13px;white-space:nowrap">保單簽收日</label><input type="date" id="sd_${f.id}" value="${esc(f.signDate||"")}" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small" data-dsave="sign:${f.id}">儲存</button>${f.signDate?`<button class="btn small" data-dclear="sign:${f.id}">清除</button>`:""}</div>
           <span class="detail">${f.signDate?fmtY(addDays(parseD(f.signDate),state.settings.fundDays))+" 會提醒你告訴客戶基金已進場":"填了簽收日，才會提醒基金進場"}</span>`:""}
         <div class="actions">${f.type==="meet"?`<button class="btn small" data-track="${f.id}">停止追蹤</button>`:""}<button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`}`})}
     </section>
@@ -970,11 +971,16 @@ function renderClient(id){
   view.querySelectorAll("#dStage [data-stage]").forEach(b=>b.onclick=()=>{c.stage=b.dataset.stage;save();renderClient(id);toast("已改為 "+c.stage+" 級");});
   view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>b.dataset.addfu==="claim"?claimSheet(id):followupSheet(id,b.dataset.addfu));
   view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k]){delete state.done[k];delete state.skipped[k];}else state.done[k]=Date.now();save();renderClient(id);});
-  view.querySelectorAll("[data-appt]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.appt);f.appt=i.value;save();renderClient(id);toast(i.value?"已記下見面時間":"已清除見面時間");});
-  view.querySelectorAll("[data-rider]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.rider);f.riderDate=i.value;save();renderClient(id);toast(i.value?"已設定複查日":"已清除複查日");});
+  /* 日期欄：點到不會自動存，要按「儲存」；「清除」可以回到留白 */
+  const DF={appt:["apx_","appt","見面時間"],sign:["sd_","signDate","簽收日"],rider:["rdx_","riderDate","複查日"]};
+  view.querySelectorAll("[data-dsave]").forEach(b=>b.onclick=()=>{const [k,fid]=b.dataset.dsave.split(":"),[pre,field,label]=DF[k];
+    const v=document.getElementById(pre+fid).value, f=state.followups.find(x=>x.id===fid);
+    if(!v) return toast("還沒選日期，不用儲存");
+    f[field]=v;save();renderClient(id);toast("已存"+label);});
+  view.querySelectorAll("[data-dclear]").forEach(b=>b.onclick=()=>{const [k,fid]=b.dataset.dclear.split(":"),[,field,label]=DF[k];
+    const f=state.followups.find(x=>x.id===fid);f[field]="";save();renderClient(id);toast("已清除"+label);});
   view.querySelectorAll("[data-rideradd]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.rideradd);f.rider=true;save();renderClient(id);});
   view.querySelectorAll("[data-riderdel]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.riderdel);f.rider=false;f.riderDate="";save();renderClient(id);toast("已移除批註／加費提醒");});
-  view.querySelectorAll("[data-sign]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.sign);f.signDate=i.value;save();renderClient(id);toast(i.value?"已存簽收日":"已清除簽收日");});
   view.querySelectorAll("[data-claimtoggle]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.claimtoggle);f.log=f.log||[];
     if(f.claimDone){delete f.claimDone;f.nextCheck=ymd(addDays(today(),2));f.log.push({date:ymd(today()),text:"重新開啟"});}
     else {f.claimDone=ymd(today());f.log.push({date:ymd(today()),text:"理賠完成"});}
