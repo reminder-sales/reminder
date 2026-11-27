@@ -858,6 +858,7 @@ function clientSheet(c){
       <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
       ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option></select></div>
       <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 有激發興趣，啟動見面後追蹤（單純見面取得資訊就不用勾）</label>
+      <div class="field" id="ndF"><label for="nd">日期</label><input id="nd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint">昨天忘了記，可以改成昨天的日期</span></div>
       <div class="field" id="itemF"><label for="item">商品名稱（可不填）</label><input id="item" placeholder="例：醫療險"></div>
       <div class="field" id="premF" hidden><label for="prem">保費</label><input id="prem" placeholder="例：年繳 36,000 元"></div>
       <div id="dealF" hidden>${dealOptsHTML("n")}</div>`:""}
@@ -873,7 +874,7 @@ function clientSheet(c){
     const setStage=k=>sp.querySelectorAll("[data-stage]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.stage===k));
     const curStage=()=>{const b=sp.querySelector('[aria-pressed="true"]');return b?b.dataset.stage:"";};
     sp.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{setStage(b.dataset.stage);document.getElementById("spErr").textContent="";});
-    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const im=IMPLIED[nx.value]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";document.getElementById("dealF").hidden=nx.value!=="deal";document.getElementById("trackF").hidden=nx.value!=="meet";};
+    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const im=IMPLIED[nx.value]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("ndF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";document.getElementById("dealF").hidden=nx.value!=="deal";document.getElementById("trackF").hidden=nx.value!=="meet";};
     const tp=document.getElementById("tp");
     const bindTags=()=>tp.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
     bindTags();
@@ -895,7 +896,7 @@ function clientSheet(c){
       let id;
       if(isNew){id=uid();state.clients.push(Object.assign({id},data));
         if(nx&&nx.value){bumpStage(state.clients[state.clients.length-1],nx.value);} 
-        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:ymd(today()),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined,track:nx.value==="meet"?document.getElementById("track").checked:undefined,...(nx.value==="deal"?readDealOpts("n"):{})});
+        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:document.getElementById("nd").value||ymd(today()),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined,track:nx.value==="meet"?document.getElementById("track").checked:undefined,...(nx.value==="deal"?readDealOpts("n"):{})});
       }else{Object.assign(c,data);id=c.id;}
       save();closeSheet();openClient=id;render();toast((isNew?"已新增客戶":"已更新")+(masked?"，姓名已自動遮罩為 "+name:""));
     };
@@ -934,7 +935,7 @@ function followupSheet(clientId,type){
   const steps=flow(type).filter(st=>!st.silent), isMeet=type==="meet", cl=client(clientId);
   openSheet(`<h3>${isMeet?"剛見完客戶":type==="proposal"?"剛給完建議書":"剛成交"}</h3>
     <form id="ff" style="display:flex;flex-direction:column;gap:14px">
-      ${isMeet?`<p class="note" style="margin:0">見面日期：<b>今天 ${fmt(today())}</b></p>
+      ${isMeet?`<div class="field"><label for="fd">${isMeet?"見面日期":"日期"}</label><input id="fd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint" id="fdHint">今天 ${fmt(today())}；昨天忘了記，可以改成昨天的日期</span></div>
       <div class="field"><label for="finfo">這次得到的資訊</label>
         <textarea id="finfo" rows="5" placeholder="想到什麼就打什麼，不用管格式。例：老大明年上小學 然後他在考慮換車 有在買ETF 太太比較擔心醫療費"></textarea>
         <button type="button" class="btn" id="forgBtn" style="align-self:flex-start">整理重點</button></div>
@@ -965,16 +966,18 @@ function followupSheet(clientId,type){
       $("ftags").querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
       $("forg").hidden=false; return r;
     };
+    if(isMeet) $("fd").onchange=()=>{const v=$("fd").value; if(!v) return; const n=diff(today(),parseD(v));
+      $("fdHint").textContent=n===0?"今天 "+fmt(today()):n===1?"昨天 "+fmt(parseD(v))+"，追蹤提醒會從這天開始算":fmt(parseD(v))+"（"+n+" 天前），追蹤提醒會從這天開始算";};
     if(isMeet) $("forgBtn").onclick=()=>{if(runOrganize()) $("fsum").focus();};
     $("ff").onsubmit=e=>{e.preventDefault();
-      const d=isMeet?ymd(today()):$("fd").value; if(!d) return toast("請選擇日期");
+      const d=$("fd").value; if(!d) return toast("請選擇日期");
       const tracking=isMeet&&$("ftrack").checked;
       let summary="";
       if(isMeet){
         if($("finfo").value.trim()&&$("forg").hidden) runOrganize();   /* 忘了按整理，就自動整理 */
         summary=$("forg").hidden?"":$("fsum").value.trim();
         if(cl&&summary){
-          cl.note=(fmt(today()).replace(/（.）/,"")+" 見面：\n"+summary+(cl.note?"\n\n"+cl.note:"")).trim();
+          cl.note=(fmt(parseD(d)).replace(/（.）/,"")+" 見面：\n"+summary+(cl.note?"\n\n"+cl.note:"")).trim();
           const picked=[...$("ftags").querySelectorAll('[aria-pressed="true"]')].map(b=>b.dataset.tag);
           cl.tags=[...new Set([...(cl.tags||[]).filter(t=>picked.includes(t)||!$("ftags").querySelector(`[data-tag="${CSS.escape(t)}"]`)),...picked])];
           for(const t of picked) if(!state.settings.tags.includes(t)) state.settings.tags.push(t);
