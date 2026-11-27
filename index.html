@@ -401,14 +401,24 @@ function waitLabel(st){return st.title.replace("等待期結束","").replace(/^�
 function dealOptsHTML(pre){const W=state.settings.waitSteps;
   return `<div class="field"><label>成交後追蹤項目（勾選需要的）</label><div class="checks">
     <label class="inline bdu"><input type="checkbox" id="${pre}hc"> 有體況（不會馬上扣款）</label>
+    <label class="inline bdu"><input type="checkbox" id="${pre}rd"> 有批註／加費</label>
+    <div class="field" id="${pre}rdF" hidden style="padding-left:26px"><label for="${pre}rdd" style="font-weight:400;font-size:13px">什麼時候可以申請複查（拿掉批註／加費）</label><input id="${pre}rdd" type="date">
+      <div class="actions"><button type="button" class="btn small" data-rplus="${pre}:6">半年後</button><button type="button" class="btn small" data-rplus="${pre}:12">1 年後</button><button type="button" class="btn small" data-rplus="${pre}:24">2 年後</button></div>
+      <span class="hint">不用記內容，到期前 ${state.settings.riderLead} 天會提醒你進公司系統查詢後再幫客戶處理。</span></div>
     <label class="inline bdu"><input type="checkbox" id="${pre}mo"> 月配息</label>
     <div class="field" id="${pre}moF" hidden style="padding-left:26px"><input id="${pre}amt" placeholder="每月配息金額，例：3,000 元">
       <label for="${pre}sd" style="font-weight:400;font-size:13px">保單簽收日（還不知道可以之後在客戶頁補填）</label><input id="${pre}sd" type="date"></div>
     ${W.map((st,i)=>`<label class="inline bdu"><input type="checkbox" id="${pre}w${i}"> ${esc(waitLabel(st))}</label>`).join("")}
   </div><span class="hint">月配息：簽收後第 ${state.settings.fundDays} 天提醒你告訴客戶基金已進場。等待期：結束當天提醒。</span></div>`}
-function bindDealOpts(pre){const m=document.getElementById(pre+"mo"); if(m) m.onchange=()=>document.getElementById(pre+"moF").hidden=!m.checked;}
+function bindDealOpts(pre){const $=id=>document.getElementById(pre+id), m=$("mo"); if(!m) return;
+  m.onchange=()=>$("moF").hidden=!m.checked;
+  $("rd").onchange=()=>$("rdF").hidden=!$("rd").checked;
+  document.querySelectorAll(`[data-rplus^="${pre}:"]`).forEach(b=>b.onclick=()=>{
+    const baseIn=document.getElementById("fd")||document.getElementById("nd"), base=baseIn&&baseIn.value?parseD(baseIn.value):today();
+    $("rdd").value=ymd(clampDate(base.getFullYear(),base.getMonth()+ +b.dataset.rplus.split(":")[1],base.getDate()));});}
 function readDealOpts(pre){const W=state.settings.waitSteps, $=id=>document.getElementById(pre+id), m=$("mo").checked;
-  return {health:$("hc").checked,waitIdx:W.map((_,i)=>i).filter(i=>$("w"+i).checked),monthly:m,amount:m?$("amt").value.trim():"",signDate:m?$("sd").value:""};}
+  const rd=$("rd").checked;
+  return {rider:rd,riderDate:rd?$("rdd").value:"",health:$("hc").checked,waitIdx:W.map((_,i)=>i).filter(i=>$("w"+i).checked),monthly:m,amount:m?$("amt").value.trim():"",signDate:m?$("sd").value:""};}
 function waitsText(f){
   const ws=dealWaits(f); if(!ws.length) return "無";
   const b=parseD(f.date);
@@ -468,6 +478,15 @@ function buildTasks(){
       out.push({key,type:"wait",c,due,target:due,item:f.item,tip:st.tip,stepTpl:st.tpl,
         detail:"成交後第 "+st.day+" 天 · "+st.title+(f.item?" · "+f.item:"")});
     }
+  }
+  for(const f of state.followups){  /* 成交時勾了「有批註／加費」：可複查日前提醒 */
+    if(f.type!=="deal"||!f.rider||!f.riderDate) continue;
+    const c=client(f.clientId); if(!c) continue;
+    const key="rd:f:"+f.id+":"+f.riderDate; if(state.done[key]) continue;
+    const r=parseD(f.riderDate);
+    out.push({key,type:"rider",c,due:addDays(r,-S.riderLead),target:r,item:f.item,stepTpl:RIDER_TPL,
+      tip:"進公司系統查清楚批註或加費的內容、需要準備的文件，再聯絡客戶。",
+      detail:(f.item||"成交保單")+" · 有批註／加費 · "+fmtY(r)+" 可申請複查 · 請進公司系統查詢"});
   }
   for(const f of state.followups){
     if(f.type!=="deal"||!f.monthly||!f.signDate) continue;
@@ -586,7 +605,7 @@ function taskHTML(k){
 function keyClient(k){
   const p=k.split(":");
   if(p[0]==="ag") return p[1];
-  if(p[0]==="fd"&&p[1]==="f"){const f=state.followups.find(x=>x.id===p[2]);return f&&f.clientId;}
+  if((p[0]==="fd"||p[0]==="rd")&&p[1]==="f"){const f=state.followups.find(x=>x.id===p[2]);return f&&f.clientId;}
   if(["fu","wt","ap","vs","cl"].includes(p[0])){const f=state.followups.find(x=>x.id===p[1]);return f&&f.clientId;}
   if(["an","rd","fd"].includes(p[0])){const q=state.policies.find(x=>x.id===p[1]);return q&&q.clientId;}
 }
@@ -598,8 +617,8 @@ function activeFuIds(){
   const ids=new Set();
   for(const k of buildTasks()){const p=k.key.split(":");
     if(["fu","wt","ap","vs","cl"].includes(p[0])) ids.add(p[1]);
-    if(p[0]==="fd"&&p[1]==="f") ids.add(p[2]);}
-  for(const f of state.followups) if(f.type==="deal"&&f.monthly&&!f.signDate) ids.add(f.id);  /* 還沒填簽收日 */
+    if((p[0]==="fd"||p[0]==="rd")&&p[1]==="f") ids.add(p[2]);}
+  for(const f of state.followups) if(f.type==="deal"&&((f.monthly&&!f.signDate)||(f.rider&&!f.riderDate))) ids.add(f.id);  /* 還沒填簽收日 */
   return ids;
 }
 function fuListHTML(fus,card){
@@ -676,7 +695,7 @@ function renderToday(){
   });
 }
 /* 同一位客戶、同一個追蹤主題（同一筆見面／建議書／成交、同一張保單、跳歲）歸成一組 */
-function grpKey(k){const p=k.key.split(":");return p[0]==="fd"&&p[1]==="f"?p.slice(0,3).join(":"):p.slice(0,2).join(":")}
+function grpKey(k){const p=k.key.split(":");return (p[0]==="fd"||p[0]==="rd")&&p[1]==="f"?p.slice(0,3).join(":"):p.slice(0,2).join(":")}
 function renderUpcoming(){
   const t=today(), end=addDays(t,range);
   const all=buildTasks().filter(k=>k.due>t&&k.due<=end), more={}, list=[];
@@ -794,6 +813,8 @@ function renderClient(id){
         ${dealWaits(f).length?`<div class="detail">等待期</div><div class="steps">${dealWaits(f).map(st=>{const k="wt:"+f.id+":"+st.day,dd=addDays(base,st.day),done=state.done[k];
           return `<button class="step ${done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title)}">${esc(st.title.replace("等待期結束",""))} ${fmtY(dd)}</button>`}).join("")}</div>`:""}
         ${f.type==="meet"&&f.track?`<div class="inline"><label for="apx_${f.id}" style="font-size:13px;white-space:nowrap">預定見面</label><input type="datetime-local" id="apx_${f.id}" data-appt="${f.id}" value="${esc(f.appt||"")}" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"></div>`:""}
+        ${f.type==="deal"?(f.rider?`<div class="inline"><label for="rdx_${f.id}" style="font-size:13px;white-space:nowrap">批註／加費可複查</label><input type="date" id="rdx_${f.id}" data-rider="${f.id}" value="${esc(f.riderDate||"")}" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small" data-riderdel="${f.id}">移除</button></div>
+          <span class="detail">${f.riderDate?fmtY(addDays(parseD(f.riderDate),-state.settings.riderLead))+" 會提醒你進公司查詢後處理":"填了日期才會提醒"}</span>`:`<button class="btn small" data-rideradd="${f.id}" style="align-self:flex-start">＋ 有批註／加費？設定複查日</button>`):""}
         ${f.type==="deal"&&f.monthly?`<div class="detail">月配息${f.amount?"：每月約 "+esc(f.amount):""}</div>
           <div class="inline"><label for="sd_${f.id}" style="font-size:13px;white-space:nowrap">保單簽收日</label><input type="date" id="sd_${f.id}" data-sign="${f.id}" value="${esc(f.signDate||"")}" style="flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"></div>
           <span class="detail">${f.signDate?fmtY(addDays(parseD(f.signDate),state.settings.fundDays))+" 會提醒你告訴客戶基金已進場":"填了簽收日，才會提醒基金進場"}</span>`:""}
@@ -846,6 +867,9 @@ function renderClient(id){
   view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>b.dataset.addfu==="claim"?claimSheet(id):followupSheet(id,b.dataset.addfu));
   view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k]){delete state.done[k];delete state.skipped[k];}else state.done[k]=Date.now();save();renderClient(id);});
   view.querySelectorAll("[data-appt]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.appt);f.appt=i.value;save();renderClient(id);toast(i.value?"已記下見面時間":"已清除見面時間");});
+  view.querySelectorAll("[data-rider]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.rider);f.riderDate=i.value;save();renderClient(id);toast(i.value?"已設定複查日":"已清除複查日");});
+  view.querySelectorAll("[data-rideradd]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.rideradd);f.rider=true;save();renderClient(id);});
+  view.querySelectorAll("[data-riderdel]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.riderdel);f.rider=false;f.riderDate="";save();renderClient(id);toast("已移除批註／加費提醒");});
   view.querySelectorAll("[data-sign]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.sign);f.signDate=i.value;save();renderClient(id);toast(i.value?"已存簽收日":"已清除簽收日");});
   view.querySelectorAll("[data-claimtoggle]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.claimtoggle);f.log=f.log||[];
     if(f.claimDone){delete f.claimDone;f.nextCheck=ymd(addDays(today(),2));f.log.push({date:ymd(today()),text:"重新開啟"});}
@@ -1045,6 +1069,7 @@ function organizeInfo(text){
   for(const tag of state.settings.tags) if(tag.length>=2&&all.includes(tag)) tags.add(tag);
   return {points,tags:[...tags],opps:points.filter(x=>OPP_RE.test(x)),warn:points.filter(x=>SENSITIVE_RE.test(x))};
 }
+const RIDER_TPL="{name}你好，你的{item}當初有批註或加費，現在已經可以申請複查了，我先幫你確認需要準備的資料，再跟你約時間處理，看看能不能幫你拿掉。";
 const CLAIM_TPL={
   docs:"{name}你好，跟你說一下理賠進度：保險公司需要補一些文件（需要補：　　），準備好跟我說，我來幫你送件。",
   done:"{name}你好，跟你報告，你的{item}已經理賠完成了，款項會匯到你指定的帳戶，入帳後再麻煩你確認一下，有任何問題隨時跟我說！"
