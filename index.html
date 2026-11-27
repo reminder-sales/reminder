@@ -17,7 +17,7 @@
 :root{
   --bg:#EEF2F0; --surface:#FFFFFF; --ink:#16302A; --muted:#5A6D67; --line:#D8E1DD;
   --accent:#0F6B5C; --accent-ink:#FFFFFF; --accent-soft:#DCEDE8;
-  --c-meet:#A63D6B; --c-prop:#2F5DA8; --c-deal:#0F7A55; --c-anni:#A86200; --c-age:#6A4C9C; --c-rider:#B3362B; --c-wait:#1F6F8B; --c-fund:#5E6B10;
+  --c-meet:#A63D6B; --c-prop:#2F5DA8; --c-deal:#0F7A55; --c-anni:#A86200; --c-age:#6A4C9C; --c-rider:#B3362B; --c-wait:#1F6F8B; --c-fund:#5E6B10; --c-claim:#8A4B2A;
   --warn-bg:#FBEDEA;
   --f-body:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;
   --f-display:"Noto Serif TC","Songti TC","PMingLiU",serif;
@@ -26,12 +26,12 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F1715; --surface:#17221F; --ink:#E4EEEA; --muted:#97AAA4; --line:#2A3833;
   --accent:#4CC2A8; --accent-ink:#06231C; --accent-soft:#1D3A33;
-  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E;
+  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E; --c-claim:#E3A27C;
   --warn-bg:#3A2220; color-scheme:dark;}}
 :root[data-theme="dark"]{
   --bg:#0F1715; --surface:#17221F; --ink:#E4EEEA; --muted:#97AAA4; --line:#2A3833;
   --accent:#4CC2A8; --accent-ink:#06231C; --accent-soft:#1D3A33;
-  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E;
+  --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E; --c-claim:#E3A27C;
   --warn-bg:#3A2220; color-scheme:dark;}
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -54,8 +54,8 @@ main .wrap{display:flex;flex-direction:column;gap:18px;padding-block:16px}
 h2{font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em;margin:0;display:flex;align-items:center;gap:8px}
 h2 .count{font-family:var(--f-num);background:var(--accent-soft);color:var(--accent);border-radius:10px;padding:0 8px;font-size:12px}
 .section{display:flex;flex-direction:column;gap:10px}
-.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
-@media (min-width:540px){.summary{grid-template-columns:repeat(8,minmax(0,1fr))}}
+.summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+@media (min-width:540px){.summary{grid-template-columns:repeat(9,minmax(0,1fr))}}
 .sum{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 4px;text-align:center;min-width:0}
 .sum b{display:block;font-family:var(--f-num);font-size:20px;line-height:1.2}
 .sum span{font-size:11px;color:var(--muted)}
@@ -367,7 +367,8 @@ const TYPES={
   wait:{label:"等待期結束",color:"var(--c-wait)"},
   fund:{label:"基金進場",color:"var(--c-fund)"},
   appt:{label:"填見面時間",color:"var(--c-meet)"},
-  visit:{label:"預定見面",color:"var(--c-meet)"}
+  visit:{label:"預定見面",color:"var(--c-meet)"},
+  claim:{label:"理賠追蹤",color:"var(--c-claim)"}
 };
 const RIDER={none:"無",exclusion:"批註（除外責任）",loading:"加費",both:"批註＋加費"};
 function client(id){return state.clients.find(c=>c.id===id)}
@@ -415,6 +416,15 @@ function buildTasks(){
   const grace=addDays(t,-30);
   for(const f of state.followups){
     const c=client(f.clientId); if(!c) continue;
+    if(f.type==="claim"){  /* 理賠：送件後每 2 天檢查一次，直到理賠完成 */
+      if(f.claimDone) continue;
+      const due=parseD(f.nextCheck||ymd(addDays(parseD(f.date),2)));
+      const last=(f.log||[]).slice(-1)[0];
+      out.push({key:"cl:"+f.id+":"+ymd(due),type:"claim",c,due,target:due,fid:f.id,item:f.item,
+        tip:"先查一下理賠進度：需要補文件就通知客戶；理賠完成就跟客戶報告；還在審核就兩天後再看。",
+        detail:(f.item||"理賠")+" · "+fmtY(parseD(f.date))+" 送件"+(last?" · 上次："+last.text+"（"+fmt(parseD(last.date))+"）":"")});
+      continue;
+    }
     if(f.type==="meet"&&!f.track) continue;  /* 單純見面只記錄，不啟動見面後追蹤 */
     const steps=flow(f.type).filter(st=>!st.silent);
     const base=parseD(f.date);
@@ -552,7 +562,11 @@ function taskHTML(k){
     ${k.tip?`<div class="tip"><b>訣竅</b>　${esc(k.tip)}</div>`:""}
     ${k.c.opp?`<div class="detail" style="color:var(--c-anni);font-weight:700">商機：${esc(k.c.opp)}</div>`:""}
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
-    ${k.type==="appt"?`<div class="inline" style="flex-wrap:wrap"><input type="datetime-local" id="ap_${k.fid}" aria-label="預定見面時間" style="flex:1;min-width:180px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small primary" data-apsave="${k.fid}">儲存見面時間</button></div>
+    ${k.type==="claim"?`<div class="actions">
+      <a class="btn small line" data-line="${esc(message(Object.assign({},k,{stepTpl:CLAIM_TPL.docs})))}" data-claim="docs" data-fid="${k.fid}" href="https://line.me/R/nv/chat" target="_blank" rel="noopener">需要補文件：複製並開 LINE</a>
+      <a class="btn small line" data-line="${esc(message(Object.assign({},k,{stepTpl:CLAIM_TPL.done})))}" data-claim="done" data-fid="${k.fid}" href="https://line.me/R/nv/chat" target="_blank" rel="noopener">理賠完成：複製並開 LINE</a></div>
+      <button class="donebtn" data-claim="wait" data-fid="${k.fid}">還在審核，兩天後再檢查</button></article>`:
+    k.type==="appt"?`<div class="inline" style="flex-wrap:wrap"><input type="datetime-local" id="ap_${k.fid}" aria-label="預定見面時間" style="flex:1;min-width:180px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small primary" data-apsave="${k.fid}">儲存見面時間</button></div>
     <div class="actions"><button class="btn small" data-apsnooze="${k.fid}">還沒約到，明天再提醒</button><button class="btn small" data-done="${esc(k.key)}">不用約了</button></div></article>`:
     k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button><div class="skiprow"><button class="skipbtn" data-skip="${esc(k.key)}">這次沒見成，略過</button>${skipCountHTML(k.c)}</div></article>`:`
     <div class="actions">
@@ -566,18 +580,25 @@ function keyClient(k){
   const p=k.split(":");
   if(p[0]==="ag") return p[1];
   if(p[0]==="fd"&&p[1]==="f"){const f=state.followups.find(x=>x.id===p[2]);return f&&f.clientId;}
-  if(["fu","wt","ap","vs"].includes(p[0])){const f=state.followups.find(x=>x.id===p[1]);return f&&f.clientId;}
+  if(["fu","wt","ap","vs","cl"].includes(p[0])){const f=state.followups.find(x=>x.id===p[1]);return f&&f.clientId;}
   if(["an","rd","fd"].includes(p[0])){const q=state.policies.find(x=>x.id===p[1]);return q&&q.clientId;}
 }
 function skipCount(c){return Object.keys(state.skipped).filter(k=>keyClient(k)===c.id).length}
 function skipCountHTML(c){const n=skipCount(c);return `<span class="skipcnt ${n>=3?"many":""}">這位客戶已略過 ${n} 次</span>`}
+function claimCardHTML(f){
+  const log=f.log||[];
+  return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:var(--c-claim);color:var(--tc);border-color:var(--tc)">理賠追蹤</span><b>${esc(f.item||"")}</b><span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(parseD(f.date))} 送件</span></div>
+    <div class="detail" style="font-weight:700">${f.claimDone?"已理賠完成（"+fmtY(parseD(f.claimDone))+"）":"進行中，下次檢查 "+fmt(parseD(f.nextCheck||f.date))}</div>
+    ${log.length?`<div class="tl">${log.map(l=>`<span class="ev" style="--tc:var(--c-claim)">${fmt(parseD(l.date)).replace(/（.）/,"")} ${esc(l.text)}</span>`).join("<i>→</i>")}</div>`:""}
+    <div class="actions"><button class="btn small" data-claimtoggle="${f.id}">${f.claimDone?"重新開啟追蹤":"標記理賠完成"}</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`;
+}
 function histHTML(c){
   const fs=state.followups.filter(f=>f.clientId===c.id).sort((a,b)=>a.date.localeCompare(b.date));
   if(!fs.length) return "";
   const n=t=>fs.filter(f=>f.type===t).length, ids=new Set(fs.map(f=>f.id));
   const contacts=Object.keys(state.done).filter(k=>{const p=k.split(":");return (p[0]==="fu"||p[0]==="wt")&&ids.has(p[1])&&!state.skipped[k];}).length;
   const t=today(), first=parseD(fs[0].date), last=parseD(fs[fs.length-1].date);
-  const L={meet:"見面",proposal:"建議書",deal:"成交"};
+  const L={meet:"見面",proposal:"建議書",deal:"成交",claim:"理賠"};
   const ev=fs.map(f=>{const d=parseD(f.date);return `<span class="ev" style="--tc:${TYPES[f.type].color}">${d.getMonth()+1}/${d.getDate()} ${L[f.type]}${f.item?"・"+esc(f.item):""}</span>`});
   const shown=ev.length>8?[ev[0],`<i>…前面還有 ${ev.length-7} 次…</i>`,...ev.slice(-6)]:ev;
   return `<section class="section"><h2>經營歷程</h2><div class="card hist">
@@ -594,7 +615,7 @@ function renderToday(){
   const t=today(), all=buildTasks();
   const due=all.filter(k=>k.due<=t);
   const counts={}; for(const k of due){const g=k.type==="appt"||k.type==="visit"?"meet":k.type; counts[g]=(counts[g]||0)+1;}
-  const SHORT={meet:"見面",proposal:"建議書",deal:"成交",anni:"週年",age:"跳歲",rider:"批註加費",wait:"等待期",fund:"基金進場",appt:"填時間",visit:"見面行程"};
+  const SHORT={meet:"見面",proposal:"建議書",deal:"成交",anni:"週年",age:"跳歲",rider:"批註加費",wait:"等待期",fund:"基金進場",appt:"填時間",visit:"見面行程",claim:"理賠"};
   const sum=Object.entries(TYPES).filter(([k])=>k!=="appt"&&k!=="visit").map(([k,v])=>`<div class="sum" style="color:${v.color}"><b>${counts[k]||0}</b><span>${SHORT[k]}</span></div>`).join("");
   view.innerHTML=`
     ${state.opps.filter(o=>!o.done).length?`<div class="banner"><span>早會商機還有 <b>${state.opps.filter(o=>!o.done).length}</b> 筆未處理</span><button class="btn small" id="goOpps">查看</button></div>`:""}
@@ -728,8 +749,8 @@ function renderClient(id){
         ${c.stageAutoOn&&c.stage!=="A"?`<span class="hint">${fmtY(parseD(c.stageAutoOn))} 因成交滿半年自動調整</span>`:""}</div>
     </div>
     <section class="section"><div class="inline" style="justify-content:space-between"><h2>追蹤流程</h2></div>
-      <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button></div>
-      ${fus.map(f=>{const steps=flow(f.type);const base=parseD(f.date);
+      <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button><button class="btn" data-addfu="claim">＋ 辦理賠</button></div>
+      ${fus.map(f=>{if(f.type==="claim") return claimCardHTML(f);const steps=flow(f.type);const base=parseD(f.date);
         return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${f.type==="meet"&&!f.track?"見面紀錄":TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
         ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
@@ -796,11 +817,15 @@ function renderClient(id){
   nt.onblur=()=>{clearTimeout(ntT);if(c.note!==nt.value.trim()){c.note=nt.value.trim();save();savedMsg();}};
   view.querySelectorAll("#dStage [data-stage]").forEach(b=>b.onclick=()=>{c.stage=b.dataset.stage;save();renderClient(id);toast("已改為 "+c.stage+" 級");});
   document.getElementById("addP").onclick=()=>policySheet(id);
-  view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>followupSheet(id,b.dataset.addfu));
+  view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>b.dataset.addfu==="claim"?claimSheet(id):followupSheet(id,b.dataset.addfu));
   view.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>policySheet(id,state.policies.find(p=>p.id===b.dataset.editp)));
   view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k]){delete state.done[k];delete state.skipped[k];}else state.done[k]=Date.now();save();renderClient(id);});
   view.querySelectorAll("[data-appt]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.appt);f.appt=i.value;save();renderClient(id);toast(i.value?"已記下見面時間":"已清除見面時間");});
   view.querySelectorAll("[data-sign]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.sign);f.signDate=i.value;save();renderClient(id);toast(i.value?"已存簽收日":"已清除簽收日");});
+  view.querySelectorAll("[data-claimtoggle]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.claimtoggle);f.log=f.log||[];
+    if(f.claimDone){delete f.claimDone;f.nextCheck=ymd(addDays(today(),2));f.log.push({date:ymd(today()),text:"重新開啟"});}
+    else {f.claimDone=ymd(today());f.log.push({date:ymd(today()),text:"理賠完成"});}
+    save();renderClient(id);toast(f.claimDone?"理賠已結案":"已重新開啟，兩天後提醒你檢查");});
   view.querySelectorAll("[data-track]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.track);f.track=!f.track;save();renderClient(id);toast(f.track?"已啟動見面後追蹤":"已停止追蹤");});
   view.querySelectorAll("[data-delfu]").forEach(b=>b.onclick=()=>confirmSheet("刪除這筆追蹤？","",()=>{state.followups=state.followups.filter(f=>f.id!==b.dataset.delfu);save();renderClient(id);}));
   document.getElementById("delC").onclick=()=>confirmSheet("刪除「"+c.name+"」？","這位客戶的追蹤與保單資料都會一起刪除。",()=>{
@@ -840,6 +865,14 @@ function bindCommon(){
   view.querySelectorAll("[data-line]").forEach(a=>a.onclick=()=>{copyQuiet(fillGreet(a.dataset.line));toast("訊息已複製，打開 LINE 後貼上");});
   view.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openClient=b.dataset.open;render();});
   view.querySelectorAll("[data-card]").forEach(el=>el.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openClient=el.dataset.card;render();});
+  view.querySelectorAll("[data-claim]").forEach(b=>{const prev=b.onclick; b.onclick=e=>{
+    if(prev) prev(e);  /* LINE 按鈕：先複製 */
+    const f=state.followups.find(x=>x.id===b.dataset.fid), a=b.dataset.claim, t=today();
+    f.log=f.log||[];
+    if(a==="done"){f.claimDone=ymd(t); f.log.push({date:ymd(t),text:"理賠完成"});}
+    else {f.nextCheck=ymd(addDays(t,2)); f.log.push({date:ymd(t),text:a==="docs"?"需要補文件":"還在審核"});}
+    save(); setTimeout(()=>{render(); toast(a==="done"?"理賠已結案":"已記錄，"+fmt(addDays(t,2))+" 再提醒你檢查");},250);
+  };});
   view.querySelectorAll("[data-apsave]").forEach(b=>b.onclick=()=>{const v=document.getElementById("ap_"+b.dataset.apsave).value;
     if(!v) return toast("請先選擇見面的日期和時間");
     const f=state.followups.find(x=>x.id===b.dataset.apsave); f.appt=v; save(); render(); toast("已記下見面時間，當天會提醒你");});
@@ -985,6 +1018,24 @@ function organizeInfo(text){
   for(const [tag,re] of TAG_RULES) if(re.test(all)) tags.add(tag);
   for(const tag of state.settings.tags) if(tag.length>=2&&all.includes(tag)) tags.add(tag);
   return {points,tags:[...tags],opps:points.filter(x=>OPP_RE.test(x)),warn:points.filter(x=>SENSITIVE_RE.test(x))};
+}
+const CLAIM_TPL={
+  docs:"{name}你好，跟你說一下理賠進度：保險公司需要補一些文件（需要補：　　），準備好跟我說，我來幫你送件。",
+  done:"{name}你好，跟你報告，你的{item}已經理賠完成了，款項會匯到你指定的帳戶，入帳後再麻煩你確認一下，有任何問題隨時跟我說！"
+};
+function claimSheet(clientId){
+  openSheet(`<h3>辦理賠</h3>
+    <form id="cfm" style="display:flex;flex-direction:column;gap:14px">
+      <div class="field"><label for="ci">理賠項目</label><input id="ci" placeholder="例：住院醫療理賠"></div>
+      <div class="field"><label for="cd">送件日期</label><input id="cd" type="date" value="${ymd(today())}" max="${ymd(today())}"></div>
+      <p class="note" style="margin:0">送件後每 2 天提醒你檢查一次進度，直到理賠完成。</p>
+      <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">開始追蹤</button></div>
+    </form>`,()=>{
+    document.getElementById("cfm").onsubmit=e=>{e.preventDefault();
+      const d=document.getElementById("cd").value; if(!d) return toast("請選擇送件日期");
+      state.followups.push({id:uid(),clientId,type:"claim",date:d,item:document.getElementById("ci").value.trim(),nextCheck:ymd(addDays(parseD(d),2)),log:[]});
+      save();closeSheet();render();toast(fmt(addDays(parseD(d),2))+" 會提醒你檢查理賠進度");};
+  });
 }
 function followupSheet(clientId,type){
   const steps=flow(type).filter(st=>!st.silent), isMeet=type==="meet", cl=client(clientId);
