@@ -635,6 +635,23 @@ function keyClient(k){
   if(["fu","wt","ap","vs","cl"].includes(p[0])){const f=state.followups.find(x=>x.id===p[1]);return f&&f.clientId;}
   if(["an","rd","fd"].includes(p[0])){const q=state.policies.find(x=>x.id===p[1]);return q&&q.clientId;}
 }
+/* 最後一次聯絡：追蹤紀錄的日期，或按過「已聯絡」的時間（略過不算） */
+function lastContact(c){
+  let last=null;
+  for(const f of state.followups) if(f.clientId===c.id){const d=parseD(f.date); if(!last||d>last) last=d;}
+  for(const k in state.done) if(!state.skipped[k]&&keyClient(k)===c.id){const d=new Date(state.done[k]); if(state.done[k]>1e12&&(!last||d>last)) last=d;}
+  return last;
+}
+function staleOppHTML(){
+  const t=today(), cut=addMonths(t,-3);
+  const list=state.clients.filter(c=>(c.opp||"").trim()).map(c=>({c,last:lastContact(c)})).filter(x=>!x.last||x.last<cut)
+    .sort((a,b)=>(a.last?a.last.getTime():0)-(b.last?b.last.getTime():0));
+  if(!list.length) return "";
+  return `<section class="section"><h2>有商機但 3 個月沒聯絡 <span class="count">${list.length}</span></h2>
+    ${list.map(({c,last})=>`<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}">${c.stage||"D"}</span>
+      <span class="meta"><b>${esc(c.name)}</b><span class="oppline">商機：${esc(c.opp)}</span><span>${last?"最後聯絡 "+fmtY(last)+"（"+diff(t,last)+" 天前）":"還沒有聯絡紀錄"}</span></span></button>`).join("")}
+  </section>`;
+}
 function skipCount(c){return Object.keys(state.skipped).filter(k=>keyClient(k)===c.id).length}
 function skipCountHTML(c){const n=skipCount(c);return `<span class="skipcnt ${n>=3?"many":""}">這位客戶已略過 ${n} 次</span>`}
 /* 還有待辦提醒的紀錄才算「追蹤中」；其他收合起來 */
@@ -764,6 +781,7 @@ function renderToday(){
       ${sum?`<div class="summary">${sum}</div>`:""}
       ${due.length?due.map(taskHTML).join(""):`<div class="empty">今天沒有待辦。<br>見完客戶後按下方「＋」新增。</div>`}
     </section>
+    ${staleOppHTML()}
     ${state.recent.length?`<section class="section"><h2>最近處理過的 <span class="count">${state.recent.length}</span></h2>
       <p class="note" style="margin:0">不小心按到「已聯絡」或「略過」，按「改回未聯絡」就會回到待辦。保留最近 3 天。</p>
       ${state.recent.map(r=>`<div class="recent"><span><b>${esc(r.who)}</b>．${esc(r.what)}．${r.skip?"略過":"已聯絡"}．${fmt(new Date(r.at))}</span><button class="btn small" data-undo="${esc(r.key)}">改回未聯絡</button></div>`).join("")}
