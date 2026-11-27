@@ -85,6 +85,8 @@ h2 .count{font-family:var(--f-num);background:var(--accent-soft);color:var(--acc
 .kv dt{color:var(--muted)} .kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
 .steps{display:flex;flex-wrap:wrap;gap:6px}
 .step{font-family:var(--f-num);font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px 8px;background:var(--surface)}
+.step.skip{background:transparent;color:var(--muted);border-style:dashed;text-decoration:line-through}
+.skipbtn{background:none;border:none;color:var(--muted);font-size:13px;text-decoration:underline;align-self:center;padding:4px 8px}
 .step.done{background:var(--accent-soft);color:var(--accent);border-color:transparent;text-decoration:line-through}
 .step.due{border-color:var(--c-rider);color:var(--c-rider)}
 .backlink{background:none;border:none;color:var(--accent);padding:0;font-size:14px;align-self:flex-start}
@@ -233,6 +235,7 @@ function load(){
   s.settings.tpl=Object.assign(structuredCloneSafe(DEFAULT_SETTINGS.tpl),(s.settings&&s.settings.tpl)||{});
   s.done=s.done||{};
   s.opps=s.opps||[];
+  s.skipped=s.skipped||{};
   for(const c of s.clients) if(c.bday&&c.bday.length>2) c.bday=c.bday.slice(0,2);  /* 生日改成只存月份 */
   /* 舊設定升級：成交第 1 天訊息加入月配息、基金進場訊息加入金額 */
   if(s.settings.tpl.fund==="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。之後每月配息入帳的時間和查詢方式，我再整理給您，有任何問題隨時問我！") s.settings.tpl.fund="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給您，有任何問題隨時問我！";
@@ -402,7 +405,7 @@ function buildTasks(){
   for(const f of state.followups){
     if(f.type!=="meet"||!f.track) continue;
     const c=client(f.clientId); if(!c) continue;
-    const doneTs=callStep&&state.done["fu:"+f.id+":"+callStep.day];
+    const doneTs=callStep&&!state.skipped["fu:"+f.id+":"+callStep.day]&&state.done["fu:"+f.id+":"+callStep.day];
     if(!f.appt&&doneTs&&!state.done["ap:"+f.id]){
       const called=new Date(doneTs); called.setHours(0,0,0,0);
       let due=addDays(called,1); if(f.apptSnooze&&parseD(f.apptSnooze)>due) due=parseD(f.apptSnooze);
@@ -524,12 +527,13 @@ function taskHTML(k){
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
     ${k.type==="appt"?`<div class="inline" style="flex-wrap:wrap"><input type="datetime-local" id="ap_${k.fid}" aria-label="預定見面時間" style="flex:1;min-width:180px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small primary" data-apsave="${k.fid}">儲存見面時間</button></div>
     <div class="actions"><button class="btn small" data-apsnooze="${k.fid}">還沒約到，明天再提醒</button><button class="btn small" data-done="${esc(k.key)}">不用約了</button></div></article>`:
-    k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button></article>`:`
+    k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button><button class="skipbtn" data-skip="${esc(k.key)}">這次沒見成，略過</button></article>`:`
     <div class="actions">
       ${msgs.map(m=>`<button class="btn small" data-copy="${esc(m.text)}">複製${m.label?"「"+esc(m.label)+"」":"訊息"}</button>
       <a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/msg/text/?${encodeURIComponent(fillGreet(m.text))}" target="_blank" rel="noopener">${m.label?"LINE「"+esc(m.label)+"」":"用 LINE 傳"}</a>`).join("")}
     </div>
-    <button class="donebtn" data-done="${esc(k.key)}">${k.call?"✓ 已打電話":"✓ 已聯絡"} <small>按這裡完成</small></button></article>`}`;
+    <button class="donebtn" data-done="${esc(k.key)}">${k.call?"✓ 已打電話":"✓ 已聯絡"} <small>按這裡完成</small></button>
+    <button class="skipbtn" data-skip="${esc(k.key)}">這次不適合聯絡，略過</button></article>`}`;
 }
 function tagsHTML(c){const t=c.tags||[];return t.length?`<div class="ctags">${t.map(x=>`<span class="ctag">${esc(x)}</span>`).join("")}</div>`:""}
 function renderToday(){
@@ -668,7 +672,7 @@ function renderClient(id){
         ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
           if(st.silent) return `<span class="step rest" title="${esc(st.tip||"")}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()} 不傳</span>`;
-          return `<button class="step ${done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title||fmtY(dd))}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()}</button>`}).join("")}</div>
+          return `<button class="step ${state.skipped[k]?"skip":done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title||fmtY(dd))}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()}${state.skipped[k]?" 略過":""}</button>`}).join("")}</div>
         ${dealWaits(f).length?`<div class="detail">等待期</div><div class="steps">${dealWaits(f).map(st=>{const k="wt:"+f.id+":"+st.day,dd=addDays(base,st.day),done=state.done[k];
           return `<button class="step ${done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title)}">${esc(st.title.replace("等待期結束",""))} ${fmtY(dd)}</button>`}).join("")}</div>`:""}
         ${f.type==="meet"&&f.track?`<div class="inline"><label for="apx_${f.id}" style="font-size:13px;white-space:nowrap">預定見面</label><input type="datetime-local" id="apx_${f.id}" data-appt="${f.id}" value="${esc(f.appt||"")}" style="flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"></div>`:""}
@@ -717,7 +721,7 @@ function renderClient(id){
   document.getElementById("addP").onclick=()=>policySheet(id);
   view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>followupSheet(id,b.dataset.addfu));
   view.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>policySheet(id,state.policies.find(p=>p.id===b.dataset.editp)));
-  view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k])delete state.done[k];else state.done[k]=Date.now();save();renderClient(id);});
+  view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k]){delete state.done[k];delete state.skipped[k];}else state.done[k]=Date.now();save();renderClient(id);});
   view.querySelectorAll("[data-appt]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.appt);f.appt=i.value;save();renderClient(id);toast(i.value?"已記下見面時間":"已清除見面時間");});
   view.querySelectorAll("[data-sign]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.sign);f.signDate=i.value;save();renderClient(id);toast(i.value?"已存簽收日":"已清除簽收日");});
   view.querySelectorAll("[data-track]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.track);f.track=!f.track;save();renderClient(id);toast(f.track?"已啟動見面後追蹤":"已停止追蹤");});
@@ -814,6 +818,7 @@ function bindCommon(){
     const f=state.followups.find(x=>x.id===b.dataset.apsave); f.appt=v; save(); render(); toast("已記下見面時間，當天會提醒你");});
   view.querySelectorAll("[data-apsnooze]").forEach(b=>b.onclick=()=>{const f=state.followups.find(x=>x.id===b.dataset.apsnooze);
     f.apptSnooze=ymd(addDays(today(),1)); save(); render(); toast("明天再提醒你填見面時間");});
+  view.querySelectorAll("[data-skip]").forEach(b=>b.onclick=()=>{const k=b.dataset.skip;state.done[k]=Date.now();state.skipped[k]=Date.now();save();render();toast("已略過這次聯繫");});
   view.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>{state.done[b.dataset.done]=Date.now();save();render();toast("已標記完成");});
 }
 
