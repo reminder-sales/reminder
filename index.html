@@ -633,11 +633,11 @@ function renderToday(){
   const due=all.filter(k=>k.due<=t);
   const counts={}; for(const k of due){const g=k.type==="appt"||k.type==="visit"?"meet":k.type; counts[g]=(counts[g]||0)+1;}
   const SHORT={meet:"見面",proposal:"建議書",deal:"成交",anni:"週年",age:"跳歲",rider:"批註加費",wait:"等待期",fund:"基金進場",appt:"填時間",visit:"見面行程",claim:"理賠"};
-  const sum=Object.entries(TYPES).filter(([k])=>k!=="appt"&&k!=="visit").map(([k,v])=>`<div class="sum" style="color:${v.color}"><b>${counts[k]||0}</b><span>${SHORT[k]}</span></div>`).join("");
+  const sum=Object.entries(TYPES).filter(([k])=>k!=="appt"&&k!=="visit"&&counts[k]).map(([k,v])=>`<div class="sum" style="color:${v.color}"><b>${counts[k]||0}</b><span>${SHORT[k]}</span></div>`).join("");
   view.innerHTML=`
     ${state.opps.filter(o=>!o.done).length?`<div class="banner"><span>早會商機還有 <b>${state.opps.filter(o=>!o.done).length}</b> 筆未處理</span><button class="btn small" id="goOpps">查看</button></div>`:""}
     ${state.seeded?`<div class="banner"><span>目前顯示的是<b>範例客戶</b>，看懂之後可以一鍵清除。</span><button class="btn small" id="clearSeed">清除範例</button></div>`:""}
-    <div class="summary">${sum}</div>
+    ${sum?`<div class="summary">${sum}</div>`:""}
     <section class="section"><h2>今天要聯絡 <span class="count">${due.length}</span></h2>
       ${due.length?due.map(taskHTML).join(""):`<div class="empty">今天沒有待辦。<br>見完客戶後按下方「＋」新增。</div>`}
     </section>
