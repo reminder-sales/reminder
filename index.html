@@ -633,11 +633,16 @@ function histHTML(c){
     <div class="tl">${shown.join("<i>→</i>")}</div></div></section>`;
 }
 function tagsHTML(c){const t=c.tags||[];return t.length?`<div class="ctags">${t.map(x=>`<span class="ctag">${esc(x)}</span>`).join("")}</div>`:""}
+/* 統計週期：每月 25 日起算，到下個月 24 日 */
+function periodStart(d){return d.getDate()>=25?new Date(d.getFullYear(),d.getMonth(),25):new Date(d.getFullYear(),d.getMonth()-1,25)}
 function monthStatsHTML(){
-  const t=today(), ym=d=>d.getFullYear()*12+d.getMonth(), cur=ym(t);
-  const cnt=(test,off)=>state.followups.filter(f=>ym(parseD(f.date))===cur-off&&test(f)).length;
+  const t=today(), st=periodStart(t), en=new Date(st.getFullYear(),st.getMonth()+1,24);
+  const pst=new Date(st.getFullYear(),st.getMonth()-1,25);
+  const inP=(d,a)=>d>=a&&d<new Date(a.getFullYear(),a.getMonth()+1,25);
+  const cnt=(test,a)=>state.followups.filter(f=>inP(parseD(f.date),a)&&test(f)).length;
+  const md=d=>(d.getMonth()+1)+"/"+d.getDate();
   const items=[["單純見面",f=>f.type==="meet"&&!f.track,"var(--muted)"],["見面有激發興趣",f=>f.type==="meet"&&f.track,"var(--c-meet)"],["遞建議書",f=>f.type==="proposal","var(--c-prop)"],["簽約",f=>f.type==="deal","var(--c-deal)"]];
-  return `<section class="section"><h2>${t.getMonth()+1} 月成果</h2><div class="mstats">${items.map(([l,fn,col])=>`<div class="mstat"><b style="color:${col}">${cnt(fn,0)}</b><span>${l}</span><small>上月 ${cnt(fn,1)}</small></div>`).join("")}</div></section>`;
+  return `<section class="section"><h2>本期成果 <span style="font-weight:400;letter-spacing:0">${md(st)}～${md(en)}</span></h2><div class="mstats">${items.map(([l,fn,col])=>`<div class="mstat"><b style="color:${col}">${cnt(fn,st)}</b><span>${l}</span><small>上期 ${cnt(fn,pst)}</small></div>`).join("")}</div></section>`;
 }
 function renderToday(){
   const t=today(), all=buildTasks();
