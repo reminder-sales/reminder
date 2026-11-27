@@ -126,6 +126,14 @@ select:disabled{opacity:.45}
 .donebtn{display:flex;width:100%;justify-content:center;align-items:center;gap:6px;padding:12px;font-size:16px;font-weight:700;border-radius:10px;border:none;background:var(--accent);color:var(--accent-ink);box-shadow:0 2px 6px rgb(0 0 0 / .15)}
 .donebtn:active{transform:translateY(1px)}
 .donebtn small{font-weight:400;font-size:12px;opacity:.85}
+.hist{display:flex;flex-direction:column;gap:8px}
+.hist .stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.hist .stat{background:var(--bg);border-radius:8px;padding:6px 4px;text-align:center}
+.hist .stat b{display:block;font-family:var(--f-num);font-size:18px}
+.hist .stat span{font-size:11px;color:var(--muted)}
+.tl{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px}
+.tl span.ev{border-radius:10px;padding:1px 8px;background:var(--bg);color:var(--tc);border:1px solid var(--tc);white-space:nowrap}
+.tl i{color:var(--muted);font-style:normal}
 .saved{font-size:12px;color:var(--muted);text-align:right}
 .pcard{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .pcard .hint{font-size:12px;color:var(--muted)}
@@ -533,10 +541,28 @@ function taskHTML(k){
     k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button><button class="skipbtn" data-skip="${esc(k.key)}">這次沒見成，略過</button></article>`:`
     <div class="actions">
       ${msgs.map(m=>`<button class="btn small" data-copy="${esc(m.text)}">複製${m.label?"「"+esc(m.label)+"」":"訊息"}</button>
-      <a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/msg/text/?${encodeURIComponent(fillGreet(m.text))}" target="_blank" rel="noopener">${m.label?"LINE「"+esc(m.label)+"」":"用 LINE 傳"}</a>`).join("")}
+      <a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/nv/chat" target="_blank" rel="noopener">${m.label?"複製「"+esc(m.label)+"」並開 LINE":"複製並開 LINE"}</a>`).join("")}
     </div>
     <button class="donebtn" data-done="${esc(k.key)}">${k.call?"✓ 已打電話":"✓ 已聯絡"} <small>按這裡完成</small></button>
     <button class="skipbtn" data-skip="${esc(k.key)}">這次不適合聯絡，略過</button></article>`}`;
+}
+function histHTML(c){
+  const fs=state.followups.filter(f=>f.clientId===c.id).sort((a,b)=>a.date.localeCompare(b.date));
+  if(!fs.length) return "";
+  const n=t=>fs.filter(f=>f.type===t).length, ids=new Set(fs.map(f=>f.id));
+  const contacts=Object.keys(state.done).filter(k=>{const p=k.split(":");return (p[0]==="fu"||p[0]==="wt")&&ids.has(p[1])&&!state.skipped[k];}).length;
+  const t=today(), first=parseD(fs[0].date), last=parseD(fs[fs.length-1].date);
+  const L={meet:"見面",proposal:"建議書",deal:"成交"};
+  const ev=fs.map(f=>{const d=parseD(f.date);return `<span class="ev" style="--tc:${TYPES[f.type].color}">${d.getMonth()+1}/${d.getDate()} ${L[f.type]}${f.item?"・"+esc(f.item):""}</span>`});
+  const shown=ev.length>8?[ev[0],`<i>…前面還有 ${ev.length-7} 次…</i>`,...ev.slice(-6)]:ev;
+  return `<section class="section"><h2>經營歷程</h2><div class="card hist">
+    <div class="stats">
+      <div class="stat"><b>${n("meet")}</b><span>見面</span></div>
+      <div class="stat"><b>${n("proposal")}</b><span>建議書</span></div>
+      <div class="stat"><b>${n("deal")}</b><span>成交</span></div>
+      <div class="stat"><b>${contacts}</b><span>已聯絡</span></div></div>
+    <div class="detail">從 ${fmtY(first)} 開始經營，已經 ${diff(t,first)} 天；最近一次是 ${diff(t,last)===0?"今天":diff(t,last)+" 天前"}的${L[fs[fs.length-1].type]}</div>
+    <div class="tl">${shown.join("<i>→</i>")}</div></div></section>`;
 }
 function tagsHTML(c){const t=c.tags||[];return t.length?`<div class="ctags">${t.map(x=>`<span class="ctag">${esc(x)}</span>`).join("")}</div>`:""}
 function renderToday(){
@@ -668,10 +694,11 @@ function renderClient(id){
         <span class="hint">記下這位客戶可能的需求或想推的商品，搜尋也找得到。</span></div>
       <div class="saved" id="iSaved">直接修改，會自動儲存</div>
     </div>
+    ${histHTML(c)}
     <section class="section"><div class="inline" style="justify-content:space-between"><h2>追蹤流程</h2></div>
       <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button></div>
       ${fus.map(f=>{const steps=flow(f.type);const base=parseD(f.date);
-        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
+        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${f.type==="meet"&&!f.track?"見面紀錄":TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
         ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
           if(st.silent) return `<span class="step rest" title="${esc(st.tip||"")}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()} 不傳</span>`;
@@ -783,6 +810,12 @@ function renderSettings(){
       <div class="actions"><button class="btn primary" type="submit">儲存設定</button></div>
     </form>
     <div class="card">
+      <h2>LINE 草稿群組</h2>
+      <div class="field"><label for="sLG">我自己的 LINE 群組名稱</label><input id="sLG" placeholder="例：我的草稿" value="${esc(S.lineGroup||"")}">
+        <span class="hint">按「複製並開 LINE」時，會先複製訊息再打開 LINE，提示你到這個群組貼上、修改，確認好再轉傳給客戶。可以在 LINE 建一個只有自己的群組當草稿區。</span></div>
+      <div class="actions"><button class="btn" id="saveLG" type="button">儲存群組名稱</button></div>
+    </div>
+    <div class="card">
       <h2>備份與還原</h2>
       <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼貼到 LINE 的 Keep 或記事本保存。</p>
       <div class="actions"><button class="btn" id="exp">複製備份碼</button><button class="btn" id="imp">貼上備份碼還原</button></div>
@@ -808,12 +841,16 @@ function renderSettings(){
     if(tg.length) S.tags=tg;
     save(); toast("設定已儲存"); render();
   };
+  document.getElementById("saveLG").onclick=()=>{S.lineGroup=document.getElementById("sLG").value.trim();save();toast(S.lineGroup?"已儲存：LINE「"+S.lineGroup+"」":"已清除群組名稱");};
   document.getElementById("exp").onclick=()=>copy(JSON.stringify(state),"備份碼已複製");
   document.getElementById("imp").onclick=importSheet;
 }
 function bindCommon(){
   view.querySelectorAll("[data-copy]").forEach(b=>b.onclick=()=>copy(fillGreet(b.dataset.copy),"訊息已複製，可貼到 LINE"));
-  view.querySelectorAll("[data-line]").forEach(a=>a.onclick=()=>{a.href="https://line.me/R/msg/text/?"+encodeURIComponent(fillGreet(a.dataset.line));});
+  view.querySelectorAll("[data-line]").forEach(a=>a.onclick=()=>{
+    const g=(state.settings.lineGroup||"").trim();
+    copyQuiet(fillGreet(a.dataset.line));
+    toast(g?"已複製，到 LINE「"+g+"」貼上編輯後再轉傳":"已複製，打開 LINE 後貼上");});
   view.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openClient=b.dataset.open;render();});
   view.querySelectorAll("[data-card]").forEach(el=>el.onclick=e=>{if(e.target.closest("button,a,input,textarea,select"))return;openClient=el.dataset.card;render();});
   view.querySelectorAll("[data-apsave]").forEach(b=>b.onclick=()=>{const v=document.getElementById("ap_"+b.dataset.apsave).value;
@@ -1054,6 +1091,14 @@ let toastT;
 function toast(msg){
   let t=document.querySelector(".toast"); if(!t){t=document.createElement("div");t.className="toast";t.setAttribute("role","status");document.body.appendChild(t);}
   t.textContent=msg; clearTimeout(toastT); toastT=setTimeout(()=>t.remove(),2200);
+}
+/* 點擊當下同步複製（之後要跳到 LINE，不能等非同步結果） */
+function copyQuiet(text){
+  let ok=false;
+  try{const ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";
+    document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,text.length);ok=document.execCommand("copy");ta.remove();}catch(e){}
+  try{navigator.clipboard&&navigator.clipboard.writeText(text).catch(()=>{});}catch(e){}
+  return ok;
 }
 function copy(text,okMsg){
   const fallback=()=>{const ta=document.createElement("textarea");ta.value=text;document.body.appendChild(ta);ta.select();
