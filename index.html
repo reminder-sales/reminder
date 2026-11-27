@@ -616,7 +616,16 @@ function renderUpcoming(){
   view.querySelectorAll("[data-range]").forEach(b=>b.onclick=()=>{range=+b.dataset.range;render();});
   bindCommon();
 }
-let oppShow="open", stageFilter="";
+let oppShow="open", stageFilter="", oppOpen=false;
+function clientOppsHTML(){
+  const list=state.clients.filter(c=>(c.opp||"").trim()).sort((a,b)=>STAGE_RANK[b.stage||"D"]-STAGE_RANK[a.stage||"D"]||a.name.localeCompare(b.name,"zh-Hant"));
+  return `<section class="section"><h2>商機清單 <span class="count">${list.length}</span></h2>
+    <p class="note" style="margin:0">有填「商機」的客戶都列在這裡，點一下打開客戶資料。</p>
+    ${list.length?list.map(c=>`<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}" title="${STAGES[c.stage||"D"].label}">${c.stage||"D"}</span>
+      <span class="meta"><b>${esc(c.name)}</b><span class="oppline" style="white-space:pre-wrap">${esc(c.opp)}</span>${tagsHTML(c)}</span></button>`).join("")
+    :`<div class="empty">還沒有客戶填商機。<br>在客戶資料頁的「商機」欄填寫，就會出現在這裡。</div>`}
+  </section>`;
+}
 function oppMatches(o){return (o.tags||[]).length?state.clients.filter(c=>(c.tags||[]).some(x=>o.tags.includes(x))):[]}
 function renderOpps(){
   const t=today();
@@ -629,7 +638,9 @@ function renderOpps(){
         <div class="tagpick" id="oppTags">${state.settings.tags.map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="false">${esc(x)}</button>`).join("")}</div></div>
       <div class="inline"><input id="oppD" type="date" value="${ymd(t)}" aria-label="日期" style="flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px"><button class="btn primary" type="submit">記下來</button></div>
     </form>
-    <div class="inline" style="justify-content:space-between;flex-wrap:wrap"><h2>商機清單 <span class="count">${list.length}</span></h2>
+    ${clientOppsHTML()}
+    <details class="section" id="mtgLog" ${oppOpen?"open":""}><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);letter-spacing:.08em">早會商機紀錄（${state.opps.filter(o=>!o.done).length} 筆未處理）</summary>
+    <div class="inline" style="justify-content:flex-end;flex-wrap:wrap;margin-top:8px">
       <div class="seg"><button data-os="open" aria-pressed="${oppShow==="open"}">未處理</button><button data-os="all" aria-pressed="${oppShow==="all"}">全部</button></div></div>
     <section class="section">${list.length?list.map(o=>{const m=oppMatches(o);return `<article class="opp ${o.done?"done":""}">
       <div class="meta">${fmtY(parseD(o.date))}${o.done?" · 已處理":""}</div>
@@ -637,7 +648,8 @@ function renderOpps(){
       ${(o.tags||[]).length?`<div class="ctags">${o.tags.map(x=>`<span class="ctag">${esc(x)}</span>`).join("")}</div>`:""}
       ${(o.tags||[]).length?`<div class="match">符合的客戶 ${m.length} 位：${m.map(c=>`<button data-open="${c.id}">${esc(c.name)}</button>`).join("")||"（目前沒有）"}</div>`:""}
       <div class="actions"><button class="btn small" data-copy="${esc(o.text)}">複製</button><button class="btn small danger" data-odel="${o.id}">刪除</button><button class="btn small ${o.done?"":"primary"}" data-odone="${o.id}">${o.done?"改回未處理":"✓ 已處理"}</button></div>
-    </article>`}).join(""):`<div class="empty">${oppShow==="open"?"沒有未處理的商機。":"還沒有商機筆記。"}</div>`}</section>`;
+    </article>`}).join(""):`<div class="empty">${oppShow==="open"?"沒有未處理的早會商機。":"還沒有早會商機紀錄。"}</div>`}</section></details>`;
+  document.getElementById("mtgLog").ontoggle=e=>{oppOpen=e.target.open;};
   const tp=document.getElementById("oppTags");
   tp.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
   document.getElementById("oppF").onsubmit=e=>{e.preventDefault();
