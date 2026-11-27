@@ -34,6 +34,7 @@
   --c-meet:#EE8DB5; --c-prop:#86A9EA; --c-deal:#5CCB9A; --c-anni:#E8A847; --c-age:#B49BE3; --c-rider:#F0877C; --c-wait:#72C6E4; --c-fund:#C8D86E; --c-claim:#E3A27C; --s1:#338ced; --s2:#e76624; --s3:#00a888; --s4:#d28e05;
   --warn-bg:#3A2220; color-scheme:dark;}
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html,body{height:100%}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-tap-highlight-color:transparent}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
@@ -1075,10 +1076,10 @@ function clientSheet(c){
         <div class="inline"><input id="newTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="addTag">加入</button></div></div>
       <div class="field"><label for="copp">商機（可不填）</label><textarea id="copp" rows="2" placeholder="例：明年想換車、孩子要出國念書"></textarea></div>
       <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
-      ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option></select></div>
+      ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option><option value="claim">辦理賠</option></select></div>
       <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 有激發興趣，啟動見面後追蹤（單純見面取得資訊就不用勾）</label>
-      <div class="field" id="ndF"><label for="nd">日期</label><input id="nd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint">昨天忘了記，可以改成昨天的日期</span></div>
-      <div class="field" id="itemF"><label for="item">商品名稱（可不填）</label><input id="item" placeholder="例：醫療險"></div>
+      <div class="field" id="ndF"><label for="nd" id="ndL">日期</label><input id="nd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint">昨天忘了記，可以改成昨天的日期</span></div>
+      <div class="field" id="itemF"><label for="item" id="itemL">商品名稱（可不填）</label><input id="item" placeholder="例：醫療險"></div>
       <div class="field" id="premF" hidden><label for="prem">保費</label><input id="prem" placeholder="例：年繳 36,000 元"></div>
       <div id="dealF" hidden>${dealOptsHTML("n")}</div>`:""}
       <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">儲存</button></div>
@@ -1093,7 +1094,8 @@ function clientSheet(c){
     const setStage=k=>sp.querySelectorAll("[data-stage]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.stage===k));
     const curStage=()=>{const b=sp.querySelector('[aria-pressed="true"]');return b?b.dataset.stage:"";};
     sp.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{setStage(b.dataset.stage);document.getElementById("spErr").textContent="";});
-    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const im=IMPLIED[nx.value]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("ndF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";document.getElementById("dealF").hidden=nx.value!=="deal";document.getElementById("trackF").hidden=nx.value!=="meet";};
+    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const im=IMPLIED[nx.value]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("ndF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";document.getElementById("dealF").hidden=nx.value!=="deal";document.getElementById("trackF").hidden=nx.value!=="meet";
+      const cl=nx.value==="claim"; document.getElementById("ndL").textContent=cl?"送件日期":"日期"; document.getElementById("itemL").textContent=cl?"理賠項目":"商品名稱（可不填）"; document.getElementById("item").placeholder=cl?"例：住院醫療理賠":"例：醫療險";};
     const tp=document.getElementById("tp");
     const bindTags=()=>tp.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
     bindTags();
@@ -1115,7 +1117,7 @@ function clientSheet(c){
       let id;
       if(isNew){id=uid();state.clients.push(Object.assign({id},data));
         if(nx&&nx.value){bumpStage(state.clients[state.clients.length-1],nx.value);} 
-        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:document.getElementById("nd").value||ymd(today()),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined,track:nx.value==="meet"?document.getElementById("track").checked:undefined,...(nx.value==="deal"?readDealOpts("n"):{})});
+        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:document.getElementById("nd").value||ymd(today()),...(nx.value==="claim"?{nextCheck:ymd(addDays(parseD(document.getElementById("nd").value||ymd(today())),2)),log:[]}:{}),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined,track:nx.value==="meet"?document.getElementById("track").checked:undefined,...(nx.value==="deal"?readDealOpts("n"):{})});
       }else{Object.assign(c,data);id=c.id;}
       save();closeSheet();openClient=id;render();toast((isNew?"已新增客戶":"已更新")+(masked?"，姓名已自動遮罩為 "+name:""));
     };
