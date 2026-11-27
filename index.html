@@ -416,6 +416,7 @@ function waitsText(f){
 function dayLabel(n){return n===0?"當天":"第"+n+"天"}
 function slots(due){const toMon=((8-due.getDay())%7)||7, mon=addDays(due,toMon);
   const f=d=>(d.getMonth()+1)+"/"+d.getDate(); return {tue:f(addDays(mon,1)),thu:f(addDays(mon,3))};}
+const POLICY_REMINDERS=false;
 function buildTasks(){
   const t=today(), S=state.settings, out=[];
   const grace=addDays(t,-30);
@@ -476,7 +477,8 @@ function buildTasks(){
     out.push({key,type:"fund",c,due,target:due,item:f.item,amount:f.amount,tip:"順便說明第一次配息大約什麼時候入帳、怎麼查詢。",
       detail:(f.item||"月配息商品")+" · 月配息"+(f.amount?" 每月約 "+f.amount:"")+" · "+fmtY(parseD(f.signDate))+" 簽收後第 "+S.fundDays+" 天"});
   }
-  for(const p of state.policies){
+  /* 保單欄位已拿掉：舊的保單資料保留，但不再產生週年／批註加費／保單月配息提醒 */
+  for(const p of (POLICY_REMINDERS?state.policies:[])){
     const c=client(p.clientId); if(!c) continue;
     if(p.monthly&&p.signDate){const key="fd:"+p.id+":"+p.signDate;
       if(!state.done[key]){const due=addDays(parseD(p.signDate),S.fundDays);
@@ -758,9 +760,8 @@ function renderClientList(){
   const hidden=filtered&&q?state.clients.filter(c=>clientMatches(c,q)).length-list.length:0;
   box.innerHTML=`<h2>客戶 <span class="count">${list.length}</span></h2>
     ${list.map(c=>{
-      const nP=state.policies.filter(p=>p.clientId===c.id).length;
       return `<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}" title="${STAGES[c.stage||"D"].label}">${c.stage||"D"}</span>
-        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>${c.bdayUnknown?"不知道生日":(c.bday?"生日 "+bMonth(c.bday)+" 月":"生日未填")} · 保單 ${nP} 張${c.note?" · "+esc(c.note):""}</span>${c.opp?`<span class="oppline">商機：${esc(c.opp)}</span>`:""}${tagsHTML(c)}</span></button>`;}).join("")}
+        <span class="meta"><b>${esc(c.name)}${c.example?'<span class="tag">範例</span>':""}</b><span>${c.bdayUnknown?"不知道生日":(c.bday?"生日 "+bMonth(c.bday)+" 月":"生日未填")}${c.note?" · "+esc(c.note):""}</span>${c.opp?`<span class="oppline">商機：${esc(c.opp)}</span>`:""}${tagsHTML(c)}</span></button>`;}).join("")}
     ${!list.length?`<div class="empty">${q||filtered?"找不到符合的客戶":"還沒有客戶，按「＋」新增第一位。"}</div>`:""}
     ${hidden>0?`<div class="banner"><span>另有 <b>${hidden}</b> 位符合搜尋，但被上方的篩選條件擋住了</span><button class="btn small" id="clrF">清除篩選</button></div>`:""}`;
   const cf=document.getElementById("clrF"); if(cf) cf.onclick=()=>{stageFilter="";tagFilter="";renderClients();};
@@ -813,14 +814,6 @@ function renderClient(id){
       <div class="saved" id="iSaved">直接修改，會自動儲存</div>
     </div></section>
     ${histHTML(c)}
-    <section class="section"><h2>保單</h2>
-      <div class="actions"><button class="btn" id="addP">＋ 新增保單</button></div>
-      ${pols.map(p=>{const a=nextAnniversary(p.eff,t);return `<div class="card pcard" style="gap:6px" data-editp="${p.id}" role="button" tabindex="0" title="點一下修改這張保單"><div class="inline" style="justify-content:space-between"><b>${esc(p.name)}</b><span class="hint">點一下修改 ›</span></div>
-        <dl class="kv"><dt>生效日</dt><dd>${fmtY(parseD(p.eff))}</dd><dt>下次週年</dt><dd>${a?fmtY(a)+"（還有 "+diff(a,t)+" 天）":"—"}</dd>
-        ${p.monthly?`<dt>月配息</dt><dd>${p.signDate?fmtY(parseD(p.signDate))+" 簽收，"+fmtY(addDays(parseD(p.signDate),state.settings.fundDays))+" 提醒基金進場":"尚未填簽收日"}</dd>`:""}
-        <dt>批註/加費</dt><dd>${RIDER[p.rider||"none"]}${p.rider&&p.rider!=="none"&&p.reviewDate?"，"+fmtY(parseD(p.reviewDate))+" 可申請複查":""}</dd>
-        ${p.note?`<dt>備註</dt><dd>${esc(p.note)}</dd>`:""}</dl></div>`}).join("")||`<div class="empty">尚無保單</div>`}
-    </section>
     <button class="btn danger" id="delC" style="align-self:flex-start">刪除這位客戶</button>`;
   document.getElementById("back").onclick=()=>{openClient=null;render();};
   const savedMsg=()=>{const el=document.getElementById("iSaved"); if(el) el.textContent="已儲存 ✓ "+new Date().toTimeString().slice(0,5);};
@@ -850,9 +843,7 @@ function renderClient(id){
   op.onblur=()=>{clearTimeout(opT);if((c.opp||"")!==op.value.trim()){c.opp=op.value.trim();save();savedMsg();}};
   nt.onblur=()=>{clearTimeout(ntT);if(c.note!==nt.value.trim()){c.note=nt.value.trim();save();savedMsg();}};
   view.querySelectorAll("#dStage [data-stage]").forEach(b=>b.onclick=()=>{c.stage=b.dataset.stage;save();renderClient(id);toast("已改為 "+c.stage+" 級");});
-  document.getElementById("addP").onclick=()=>policySheet(id);
   view.querySelectorAll("[data-addfu]").forEach(b=>b.onclick=()=>b.dataset.addfu==="claim"?claimSheet(id):followupSheet(id,b.dataset.addfu));
-  view.querySelectorAll("[data-editp]").forEach(b=>b.onclick=()=>policySheet(id,state.policies.find(p=>p.id===b.dataset.editp)));
   view.querySelectorAll("[data-toggle]").forEach(b=>b.onclick=()=>{const k=b.dataset.toggle;if(state.done[k]){delete state.done[k];delete state.skipped[k];}else state.done[k]=Date.now();save();renderClient(id);});
   view.querySelectorAll("[data-appt]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.appt);f.appt=i.value;save();renderClient(id);toast(i.value?"已記下見面時間":"已清除見面時間");});
   view.querySelectorAll("[data-sign]").forEach(i=>i.onchange=()=>{const f=state.followups.find(x=>x.id===i.dataset.sign);f.signDate=i.value;save();renderClient(id);toast(i.value?"已存簽收日":"已清除簽收日");});
