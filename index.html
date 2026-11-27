@@ -89,6 +89,9 @@ h2 .count{font-family:var(--f-num);background:var(--accent-soft);color:var(--acc
 .steps{display:flex;flex-wrap:wrap;gap:6px}
 .step{font-family:var(--f-num);font-size:12px;border:1px solid var(--line);border-radius:6px;padding:2px 8px;background:var(--surface)}
 .step.skip{background:transparent;color:var(--muted);border-style:dashed;text-decoration:line-through}
+.skiprow{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap}
+.skipcnt{font-size:12px;color:var(--muted);background:var(--bg);border-radius:10px;padding:1px 8px}
+.skipcnt.many{color:var(--c-rider);background:var(--warn-bg);font-weight:700}
 .skipbtn{background:none;border:none;color:var(--muted);font-size:13px;text-decoration:underline;align-self:center;padding:4px 8px}
 .step.done{background:var(--accent-soft);color:var(--accent);border-color:transparent;text-decoration:line-through}
 .step.due{border-color:var(--c-rider);color:var(--c-rider)}
@@ -548,13 +551,23 @@ function taskHTML(k){
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
     ${k.type==="appt"?`<div class="inline" style="flex-wrap:wrap"><input type="datetime-local" id="ap_${k.fid}" aria-label="預定見面時間" style="flex:1;min-width:180px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small primary" data-apsave="${k.fid}">儲存見面時間</button></div>
     <div class="actions"><button class="btn small" data-apsnooze="${k.fid}">還沒約到，明天再提醒</button><button class="btn small" data-done="${esc(k.key)}">不用約了</button></div></article>`:
-    k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button><button class="skipbtn" data-skip="${esc(k.key)}">這次沒見成，略過</button></article>`:`
+    k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button><div class="skiprow"><button class="skipbtn" data-skip="${esc(k.key)}">這次沒見成，略過</button>${skipCountHTML(k.c)}</div></article>`:`
     <div class="actions">
       ${msgs.map(m=>`<a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/nv/chat" target="_blank" rel="noopener">${m.label?"複製「"+esc(m.label)+"」並開 LINE":"複製並開 LINE"}</a>`).join("")}
     </div>
     <button class="donebtn" data-done="${esc(k.key)}">${k.call?"✓ 已打電話":"✓ 已聯絡"} <small>按這裡完成</small></button>
-    <button class="skipbtn" data-skip="${esc(k.key)}">這次不適合聯絡，略過</button></article>`}`;
+    <div class="skiprow"><button class="skipbtn" data-skip="${esc(k.key)}">這次不適合聯絡，略過</button>${skipCountHTML(k.c)}</div></article>`}`;
 }
+/* 由提醒的 key 找出是哪一位客戶 */
+function keyClient(k){
+  const p=k.split(":");
+  if(p[0]==="ag") return p[1];
+  if(p[0]==="fd"&&p[1]==="f"){const f=state.followups.find(x=>x.id===p[2]);return f&&f.clientId;}
+  if(["fu","wt","ap","vs"].includes(p[0])){const f=state.followups.find(x=>x.id===p[1]);return f&&f.clientId;}
+  if(["an","rd","fd"].includes(p[0])){const q=state.policies.find(x=>x.id===p[1]);return q&&q.clientId;}
+}
+function skipCount(c){return Object.keys(state.skipped).filter(k=>keyClient(k)===c.id).length}
+function skipCountHTML(c){const n=skipCount(c);return `<span class="skipcnt ${n>=3?"many":""}">這位客戶已略過 ${n} 次</span>`}
 function histHTML(c){
   const fs=state.followups.filter(f=>f.clientId===c.id).sort((a,b)=>a.date.localeCompare(b.date));
   if(!fs.length) return "";
