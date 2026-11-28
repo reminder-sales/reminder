@@ -710,7 +710,7 @@ function periodStart(d){return d.getDate()>=25?new Date(d.getFullYear(),d.getMon
 /* ---------- 活動量統計 ----------
    見面次數：見面、遞建議書、簽約都算見面；同一位客戶同一天只算 1 次
    有興趣／建議書／簽約：直接算次數（同一人兩次就算 2）
-   重複見面：同一期內第 2 次以後見同一位客戶，而且那天沒有激發興趣、沒給建議書、沒簽約 */
+   重複見面：同一期內第 2 次以後見同一位客戶，不管那次有沒有進展 */
 const VISIT_TYPES=["meet","proposal","deal"];
 function metrics(st,en){
   const fs=state.followups.filter(f=>{const d=parseD(f.date);return d>=st&&d<en&&client(f.clientId);});
@@ -718,7 +718,7 @@ function metrics(st,en){
   const days={};  /* clientId -> {date: 有沒有進展} */
   for(const f of vis){const d=(days[f.clientId]=days[f.clientId]||{}); d[f.date]=d[f.date]||(f.type!=="meet"||!!f.track);}
   let visits=0, repeat=0;
-  for(const cid in days){const ds=Object.keys(days[cid]).sort(); visits+=ds.length; ds.slice(1).forEach(x=>{if(!days[cid][x]) repeat++;});}
+  for(const cid in days){const ds=Object.keys(days[cid]).sort(); visits+=ds.length; repeat+=Math.max(0,ds.length-1);}
   return {visits,people:Object.keys(days).length,repeat,
     interest:fs.filter(f=>f.type==="meet"&&f.track).length, proposal:fs.filter(f=>f.type==="proposal").length, deal:fs.filter(f=>f.type==="deal").length};
 }
@@ -771,7 +771,7 @@ function renderStats(){
     <button class="backlink" id="back">‹ 返回</button>
     <div class="inline" style="justify-content:space-between"><h2>${Y} 年活動量</h2>
       <div class="seg"><button id="yPrev" aria-label="上一年">‹ ${Y-1}</button>${Y<cur.Y?`<button id="yNext" aria-label="下一年">${Y+1} ›</button>`:""}</div></div>
-    <p class="note" style="margin:0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內再次見同一位客戶，而且那次沒有激發興趣、沒給建議書、也沒簽約。</p>
+    <p class="note" style="margin:0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。</p>
     <h2>近 90 天（每季）</h2>
     ${rateTable([{name:"近 90 天<br><small>"+md(q1s)+"～"+md(new Date(q1e-864e5))+"</small>",mt:metrics(q1s,q1e),cur:true},{name:"再前 90 天<br><small>"+md(q2s)+"～"+md(new Date(q2e-864e5))+"</small>",mt:metrics(q2s,q2e)}],"期間")}
     <h2>每月變化</h2>
