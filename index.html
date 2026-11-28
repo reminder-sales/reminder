@@ -179,6 +179,11 @@ select:disabled{opacity:.45}
 .rcell{display:flex;flex-direction:column;align-items:center;min-width:0}
 .rcell b{font-family:var(--f-num);font-size:15px}.rcell small{font-size:10px;color:var(--muted);white-space:nowrap}
 .mtitle .lg{margin-right:10px;font-weight:700}
+.overbox{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;font-size:13px}
+.overbox .num{font-family:var(--f-num);font-size:16px}
+.overbox small{color:var(--muted)}
+.overbox.bad{border-color:var(--c-rider);background:var(--warn-bg)}
+.overbox.bad .num{color:var(--c-rider)}
 .saved{font-size:12px;color:var(--muted);text-align:right}
 .pcard{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .pcard .hint{font-size:12px;color:var(--muted)}
@@ -720,7 +725,11 @@ function metrics(st,en){
   for(const f of vis){const d=(days[f.clientId]=days[f.clientId]||{}); d[f.date]=d[f.date]||(f.type!=="meet"||!!f.track);}
   let visits=0, repeat=0;
   for(const cid in days){const ds=Object.keys(days[cid]).sort(); visits+=ds.length; repeat+=Math.max(0,ds.length-1);}
-  return {visits,people:Object.keys(days).length,repeat,
+  /* 過度拜訪：期間內見同一位客戶 4 次以上，而且 45 天內沒有成交（以期間最後一天或今天較早者往前算） */
+  const ref=new Date(Math.min(en-864e5,today().getTime())), from=addDays(ref,-44);
+  const over=Object.keys(days).filter(cid=>Object.keys(days[cid]).length>=4&&!state.followups.some(f=>f.clientId===cid&&f.type==="deal"&&parseD(f.date)>=from&&parseD(f.date)<=ref));
+  const overVisits=over.reduce((a,cid)=>a+Object.keys(days[cid]).length,0);
+  return {visits,people:Object.keys(days).length,repeat,over,overPeople:over.length,overVisits,
     interest:fs.filter(f=>f.type==="meet"&&(f.track||f.interest)).length, proposal:fs.filter(f=>f.type==="proposal").length, deal:fs.filter(f=>f.type==="deal").length};
 }
 const RATES=[["重複見面","repeat","visits"],["興趣率","interest","visits"],["建議書率","proposal","interest"],["成交率","deal","proposal"],["整體成交率","deal","visits"]];
@@ -730,6 +739,12 @@ function quarterRange(Y,q){return [new Date(Y,(q-1)*3-1,25),new Date(Y,(q-1)*3+2
 function last90(back){const t=today();return [addDays(t,-89-back),addDays(t,1-back)]}  /* 含今天往前 90 天；back=90 是再往前 90 天 */
 function curPeriod(){const st=periodStart(today());const e=new Date(st.getFullYear(),st.getMonth()+1,1);return {Y:e.getFullYear(),mo:e.getMonth()+1};}
 const md=d=>(d.getMonth()+1)+"/"+d.getDate();
+function overHTML(label,m){
+  const share=m.visits?Math.round(m.overVisits/m.visits*100):0, bad=share>15;
+  return `<div class="overbox ${bad?"bad":""}"><div class="inline" style="justify-content:space-between;flex-wrap:wrap"><b>${label}過度拜訪</b>
+    <span><b class="num">${m.visits?share+"%":"—"}</b> 的見面花在 ${m.overPeople} 位客戶${bad?"（超過 15%）":""}</span></div>
+    ${m.over.length?`<div class="match">${m.over.map(cid=>{const c=client(cid);return `<button data-open="${cid}">${esc(c.name)}</button>`}).join("")}</div>`:`<small>沒有見 4 次以上還沒成交的客戶</small>`}</div>`;
+}
 function rateRow(label,m,range){return `<div class="rrow"><div class="rlabel"><b>${label}</b><small>${range}</small></div>${RATES.map(([l,n,d])=>`<div class="rcell"><b>${pct(m,n,d)}</b><small>${l}</small></div>`).join("")}</div>`}
 function monthStatsHTML(){
   const {Y,mo}=curPeriod(), [st,en]=monthRange(Y,mo), [pst,pen]=monthRange(Y,mo-1);
@@ -741,7 +756,8 @@ function monthStatsHTML(){
     <button class="mlink" id="goStats" aria-label="看全年每月變化" style="display:flex;flex-direction:column;gap:8px">
     <div class="mstats">${tiles.map(([l,v,sub,prev,col])=>`<div class="mstat"><b><i class="sw" style="background:${col}"></i>${v}</b><span>${l}次數</span><span class="sub">${sub}</span><small>${prev}</small></div>`).join("")}</div>
     <div class="rates">${rateRow("本月",m,md(st)+"～"+md(new Date(en-864e5)))}${rateRow("近 90 天",qm,md(qs)+"～"+md(new Date(qe-864e5)))}</div></button>
-    <span class="hint" style="font-size:12px;color:var(--muted);text-align:right">點一下看全年每月、每季變化 ›</span></section>`;
+    <span class="hint" style="font-size:12px;color:var(--muted);text-align:right">點一下看全年每月、每季變化 ›</span>
+    ${overHTML("本月",m)}${overHTML("近 90 天",qm)}</section>`;
 }
 /* ---------- 全年趨勢 ---------- */
 let statsYear=null;
@@ -765,14 +781,14 @@ function renderStats(){
         return `<polyline points="${pts.map(p=>p.join(",")).join(" ")}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`+pts.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="${col}" stroke="var(--surface)" stroke-width="2"/>`).join("");}).join("")}
       <rect x="${L-10}" y="0" width="${pw+20}" height="${H}" fill="transparent" class="hit"/>
     </svg></div>`;
-  const rateTable=(rows,label)=>`<div style="overflow-x:auto"><table class="stbl"><thead><tr><th>${label}</th>${RATES.map(([l])=>`<th>${l}</th>`).join("")}<th>見面次數</th><th>不同的人</th><th>重複見面次數</th><th>有興趣</th><th>建議書</th><th>簽約</th></tr></thead>
-    <tbody>${rows.map(r=>`<tr${r.cur?' class="cur"':""}><td>${r.name}</td>${r.mt?RATES.map(([,n,d])=>`<td>${pct(r.mt,n,d)}</td>`).join("")+["visits","people","repeat","interest","proposal","deal"].map(k=>`<td>${r.mt[k]}</td>`).join(""):`<td colspan="11" style="text-align:center;color:var(--muted)">還沒到</td>`}</tr>`).join("")}</tbody></table></div>`;
+  const rateTable=(rows,label)=>`<div style="overflow-x:auto"><table class="stbl"><thead><tr><th>${label}</th>${RATES.map(([l])=>`<th>${l}</th>`).join("")}<th>見面次數</th><th>不同的人</th><th>重複見面次數</th><th>過度拜訪佔比</th><th>過度拜訪人數</th><th>有興趣</th><th>建議書</th><th>簽約</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr${r.cur?' class="cur"':""}><td>${r.name}</td>${r.mt?RATES.map(([,n,d])=>`<td>${pct(r.mt,n,d)}</td>`).join("")+["visits","people","repeat"].map(k=>`<td>${r.mt[k]}</td>`).join("")+`<td>${pct(r.mt,"overVisits","visits")}</td><td>${r.mt.overPeople}</td>`+["interest","proposal","deal"].map(k=>`<td>${r.mt[k]}</td>`).join(""):`<td colspan="13" style="text-align:center;color:var(--muted)">還沒到</td>`}</tr>`).join("")}</tbody></table></div>`;
   const yr=metrics(new Date(Y-1,11,25),new Date(Y,11,25));
   view.innerHTML=`
     <button class="backlink" id="back">‹ 返回</button>
     <div class="inline" style="justify-content:space-between"><h2>${Y} 年活動量</h2>
       <div class="seg"><button id="yPrev" aria-label="上一年">‹ ${Y-1}</button>${Y<cur.Y?`<button id="yNext" aria-label="下一年">${Y+1} ›</button>`:""}</div></div>
-    <p class="note" style="margin:0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。</p>
+    <p class="note" style="margin:0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。過度拜訪：同一期內見同一位客戶 4 次以上，而且 45 天內沒有成交；佔比 = 這些客戶的見面次數 ÷ 總見面次數，建議 15% 以下。</p>
     <h2>近 90 天（每季）</h2>
     ${rateTable([{name:"近 90 天<br><small>"+md(q1s)+"～"+md(new Date(q1e-864e5))+"</small>",mt:metrics(q1s,q1e),cur:true},{name:"再前 90 天<br><small>"+md(q2s)+"～"+md(new Date(q2e-864e5))+"</small>",mt:metrics(q2s,q2e)}],"期間")}
     <h2>每月變化</h2>
