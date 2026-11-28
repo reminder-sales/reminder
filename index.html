@@ -435,7 +435,8 @@ function dealWaits(f){const W=state.settings.waitSteps;
   return f.wait===false?[]:W;}
 function waitLabel(st){return st.title.replace("等待期結束","").replace(/^疾病$/,"一般疾病")+"等待期 "+(st.day%365===0?st.day/365+" 年":st.day+" 天")}
 function dealOptsHTML(pre){const W=state.settings.waitSteps;
-  return `<div class="field"><label>成交後追蹤項目（勾選需要的）</label><div class="checks">
+  return `<div class="field"><label for="${pre}cnt">成交件數</label><div class="inline"><button type="button" class="btn" data-cstep="${pre}:-1" aria-label="減少">－</button><input id="${pre}cnt" type="number" min="1" value="1" inputmode="numeric" style="width:80px;text-align:center"><button type="button" class="btn" data-cstep="${pre}:1" aria-label="增加">＋</button><span class="hint">件</span></div></div>
+  <div class="field"><label>成交後追蹤項目（勾選需要的）</label><div class="checks">
     <label class="inline bdu"><input type="checkbox" id="${pre}hc"> 有體況（不會馬上扣款）</label>
     <label class="inline bdu"><input type="checkbox" id="${pre}rd"> 有批註／加費</label>
     <div class="field" id="${pre}rdF" hidden style="padding-left:26px"><label for="${pre}rdd" style="font-weight:400;font-size:13px">什麼時候可以申請複查（拿掉批註／加費）</label><input id="${pre}rdd" type="date">
@@ -447,6 +448,7 @@ function dealOptsHTML(pre){const W=state.settings.waitSteps;
     ${W.map((st,i)=>`<label class="inline bdu"><input type="checkbox" id="${pre}w${i}"> ${esc(waitLabel(st))}</label>`).join("")}
   </div><span class="hint">月配息：簽收後第 ${state.settings.fundDays} 天提醒你告訴客戶基金已進場。等待期：結束當天提醒。</span></div>`}
 function bindDealOpts(pre){const $=id=>document.getElementById(pre+id), m=$("mo"); if(!m) return;
+  document.querySelectorAll(`[data-cstep^="${pre}:"]`).forEach(b=>b.onclick=()=>{const i=$("cnt");i.value=Math.max(1,(parseInt(i.value)||1)+ +b.dataset.cstep.split(":")[1]);});
   m.onchange=()=>$("moF").hidden=!m.checked;
   $("rd").onchange=()=>$("rdF").hidden=!$("rd").checked;
   document.querySelectorAll(`[data-rplus^="${pre}:"]`).forEach(b=>b.onclick=()=>{
@@ -454,7 +456,7 @@ function bindDealOpts(pre){const $=id=>document.getElementById(pre+id), m=$("mo"
     $("rdd").value=ymd(clampDate(base.getFullYear(),base.getMonth()+ +b.dataset.rplus.split(":")[1],base.getDate()));});}
 function readDealOpts(pre){const W=state.settings.waitSteps, $=id=>document.getElementById(pre+id), m=$("mo").checked;
   const rd=$("rd").checked;
-  return {rider:rd,riderDate:rd?$("rdd").value:"",health:$("hc").checked,waitIdx:W.map((_,i)=>i).filter(i=>$("w"+i).checked),monthly:m,amount:m?$("amt").value.trim():"",signDate:m?$("sd").value:""};}
+  return {cases:Math.max(1,parseInt($("cnt").value)||1),rider:rd,riderDate:rd?$("rdd").value:"",health:$("hc").checked,waitIdx:W.map((_,i)=>i).filter(i=>$("w"+i).checked),monthly:m,amount:m?$("amt").value.trim():"",signDate:m?$("sd").value:""};}
 function waitsText(f){
   const ws=dealWaits(f); if(!ws.length) return "無";
   const b=parseD(f.date);
@@ -707,7 +709,7 @@ function histHTML(c){
     <div class="stats">
       <div class="stat"><b>${visitDays}</b><span>見面</span></div>
       <div class="stat"><b>${n("proposal")}</b><span>建議書</span></div>
-      <div class="stat"><b>${n("deal")}</b><span>成交</span></div>
+      <div class="stat"><b>${fs.filter(f=>f.type==="deal").reduce((a,f)=>a+(f.cases||1),0)}</b><span>成交件數</span></div>
       <div class="stat"><b>${contacts}</b><span>已聯絡</span></div></div>
     <div class="detail">從 ${fmtY(first)} 開始經營，已經 ${diff(t,first)} 天；最近一次是 ${diff(t,last)===0?"今天":diff(t,last)+" 天前"}的${L[fs[fs.length-1].type]}</div>
     <div class="tl">${shown.join("<i>→</i>")}</div></div></section>`;
@@ -732,7 +734,7 @@ function metrics(st,en){
   const over=Object.keys(days).filter(cid=>Object.keys(days[cid]).length>=4&&!state.followups.some(f=>f.clientId===cid&&f.type==="deal"&&parseD(f.date)>=from&&parseD(f.date)<=ref));
   const overVisits=over.reduce((a,cid)=>a+Object.keys(days[cid]).length,0);
   return {visits,people:Object.keys(days).length,repeat,over,overPeople:over.length,overVisits,
-    interest:fs.filter(f=>f.type==="meet"&&(f.track||f.interest)).length, proposal:fs.filter(f=>f.type==="proposal").length, deal:fs.filter(f=>f.type==="deal").length};
+    interest:fs.filter(f=>f.type==="meet"&&(f.track||f.interest)).length, proposal:fs.filter(f=>f.type==="proposal").length, deal:fs.filter(f=>f.type==="deal").reduce((a,f)=>a+(f.cases||1),0)};
 }
 const RATES=[["重複見面","repeat","visits"],["興趣率","interest","visits"],["建議書率","proposal","interest"],["成交率","deal","proposal"],["整體成交率","deal","visits"]];
 function pct(m,num,den){return m[den]?Math.round(m[num]/m[den]*100)+"%":"—"}
@@ -753,10 +755,10 @@ function monthStatsHTML(){
   const [qs,qe]=last90(0);
   const m=metrics(st,en), pm=metrics(pst,pen), qm=metrics(qs,qe);
   const tiles=[["見面",m.visits,`${m.people} 位不同的人`,`上個月 ${pm.visits} 次`,"var(--s1)"],
-    ["有興趣",m.interest,"",`上個月 ${pm.interest} 次`,"var(--s2)"],["建議書",m.proposal,"",`上個月 ${pm.proposal} 次`,"var(--s3)"],["簽約",m.deal,"",`上個月 ${pm.deal} 次`,"var(--s4)"]];
+    ["有興趣",m.interest,"",`上個月 ${pm.interest} 次`,"var(--s2)"],["建議書",m.proposal,"",`上個月 ${pm.proposal} 次`,"var(--s3)"],["簽約",m.deal,"",`上個月 ${pm.deal} 件`,"var(--s4)"]];
   return `<section class="section"><h2>本期成果 <span style="font-weight:400;letter-spacing:0">${md(st)}～${md(new Date(en-864e5))}</span></h2>
     <button class="mlink" id="goStats" aria-label="看全年每月變化" style="display:flex;flex-direction:column;gap:8px">
-    <div class="mstats">${tiles.map(([l,v,sub,prev,col])=>`<div class="mstat"><b><i class="sw" style="background:${col}"></i>${v}</b><span>${l}次數</span><span class="sub">${sub}</span><small>${prev}</small></div>`).join("")}</div>
+    <div class="mstats">${tiles.map(([l,v,sub,prev,col])=>`<div class="mstat"><b><i class="sw" style="background:${col}"></i>${v}</b><span>${l==="簽約"?"簽約件數":l+"次數"}</span><span class="sub">${sub}</span><small>${prev}</small></div>`).join("")}</div>
     <div class="rates">${rateRow("本月",m,md(st)+"～"+md(new Date(en-864e5)))}${rateRow("近 90 天",qm,md(qs)+"～"+md(new Date(qe-864e5)))}</div></button>
     <span class="hint" style="font-size:12px;color:var(--muted);text-align:right">點一下看全年每月、每季變化 ›</span>
     ${overHTML("本月",m)}${overHTML("近 90 天",qm)}</section>`;
@@ -958,7 +960,7 @@ function renderClient(id){
     <section class="section"><div class="inline" style="justify-content:space-between"><h2>追蹤流程</h2></div>
       <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button><button class="btn" data-addfu="ip">＋ 興趣＋建議書</button><button class="btn" data-addfu="ipd">＋ 興趣＋建議書＋簽約</button><button class="btn" data-addfu="claim">＋ 辦理賠</button></div>
       ${fuListHTML(fus,f=>{if(f.type==="claim") return claimCardHTML(f);const steps=flow(f.type);const base=parseD(f.date);
-        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${f.type==="meet"&&!f.track?(f.interest?"見面紀錄（有興趣）":"見面紀錄"):f.noTrack?"建議書紀錄":TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
+        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${f.type==="meet"&&!f.track?(f.interest?"見面紀錄（有興趣）":"見面紀錄"):f.noTrack?"建議書紀錄":TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.type==="deal"&&(f.cases||1)>1?`<span class="ctag">${f.cases} 件</span>`:""}${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
         ${f.noTrack?`<div class="detail">只記錄給建議書，追蹤以成交為主</div><div class="actions"><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:f.type==="meet"&&!f.track?`<div class="detail">${f.interest?"有激發興趣，":""}只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
           if(st.silent) return `<span class="step rest" title="${esc(st.tip||"")}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()} 不傳</span>`;
