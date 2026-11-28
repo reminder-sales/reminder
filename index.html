@@ -173,7 +173,7 @@ select:disabled{opacity:.45}
 .stbl tr.tot td{font-weight:700}
 .mstat .sub{font-size:11px;color:var(--ink);opacity:.8}
 .rates{display:flex;flex-direction:column;gap:6px}
-.rrow{display:grid;grid-template-columns:minmax(0,1.1fr) repeat(5,minmax(0,1fr));gap:4px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
+.rrow{display:grid;grid-template-columns:minmax(0,1.1fr) repeat(4,minmax(0,1fr));gap:4px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 8px}
 .rlabel{display:flex;flex-direction:column;text-align:left;min-width:0}
 .rlabel b{font-size:13px}.rlabel small{font-size:10px;color:var(--muted)}
 .rcell{display:flex;flex-direction:column;align-items:center;min-width:0}
@@ -738,7 +738,7 @@ function metrics(st,en){
   return {visits,people:Object.keys(days).length,repeat,over,overPeople:over.length,overVisits,
     interest:fs.filter(f=>f.type==="meet"&&(f.track||f.interest)).length, proposal:fs.filter(f=>f.type==="proposal").length, deal:fs.filter(f=>f.type==="deal").reduce((a,f)=>a+(f.cases||1),0)};
 }
-const RATES=[["重複見面","repeat","visits"],["興趣率","interest","visits"],["建議書率","proposal","interest"],["成交率","deal","proposal"],["整體成交率","deal","visits"]];
+const RATES=[["重複見面","repeat","visits"],["興趣率","interest","visits"],["建議書率","proposal","visits"],["成交率","deal","visits"]];  /* 分母都是見面次數 */
 function pct(m,num,den){return m[den]?Math.round(m[num]/m[den]*100)+"%":"—"}
 function monthRange(Y,mo){return [new Date(Y,mo-2,25),new Date(Y,mo-1,25)]}           /* mo = 1..12，以結束月份命名 */
 function quarterRange(Y,q){return [new Date(Y,(q-1)*3-1,25),new Date(Y,(q-1)*3+2,25)]}
@@ -794,14 +794,14 @@ function renderStats(){
     <button class="backlink" id="back">‹ 返回</button>
     <div class="inline" style="justify-content:space-between"><h2>${Y} 年活動量</h2>
       <div class="seg"><button id="yPrev" aria-label="上一年">‹ ${Y-1}</button>${Y<cur.Y?`<button id="yNext" aria-label="下一年">${Y+1} ›</button>`:""}</div></div>
-    <details class="calc"><summary>計算方式 ›</summary><p class="note" style="margin:6px 0 0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約、辦理賠都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。過度拜訪：同一期內見同一位客戶 4 次以上，而且 45 天內沒有成交；佔比 = 這些客戶的見面次數 ÷ 總見面次數，建議 15% 以下。</p></details>
+    <details class="calc"><summary>計算方式 ›</summary><p class="note" style="margin:6px 0 0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約、辦理賠都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。過度拜訪：同一期內見同一位客戶 4 次以上，而且 45 天內沒有成交；佔比 = 這些客戶的見面次數 ÷ 總見面次數，建議 15% 以下。轉換率的分母都是見面次數：興趣率 = 有興趣次數 ÷ 見面次數、建議書率 = 建議書次數 ÷ 見面次數、成交率 = 簽約件數 ÷ 見面次數。</p></details>
     <h2>近 90 天（每季）</h2>
     ${rateTable([{name:"近 90 天<br><small>"+md(q1s)+"～"+md(new Date(q1e-864e5))+"</small>",mt:metrics(q1s,q1e),cur:true},{name:"再前 90 天<br><small>"+md(q2s)+"～"+md(new Date(q2e-864e5))+"</small>",mt:metrics(q2s,q2e)}],"期間")}
     <h2>每月變化</h2>
     <div class="card" style="gap:10px"><div class="chartwrap" id="cw">${charts.map(mini).join("")}<div class="tip2" id="tip2" hidden></div></div></div>
     <h2>每月轉換率</h2>
     ${rateTable(months.map(x=>({name:x.m+" 月",mt:x.mt,cur:Y===cur.Y&&x.m===cur.mo})),"月份")}
-    <p class="note" style="margin:0">全年：見面 ${yr.visits} 次、${yr.people} 位不同的人、重複見面 ${pct(yr,"repeat","visits")}；有興趣 ${yr.interest} 次、建議書 ${yr.proposal} 次、簽約 ${yr.deal} 次；整體成交率 ${pct(yr,"deal","visits")}。</p>`;
+    <p class="note" style="margin:0">全年：見面 ${yr.visits} 次、${yr.people} 位不同的人、重複見面 ${pct(yr,"repeat","visits")}；有興趣 ${yr.interest} 次、建議書 ${yr.proposal} 次、簽約 ${yr.deal} 次；成交率 ${pct(yr,"deal","visits")}。</p>`;
   document.getElementById("back").onclick=()=>{tab="today";render();};
   document.getElementById("yPrev").onclick=()=>{statsYear--;render();};
   const yn=document.getElementById("yNext"); if(yn) yn.onclick=()=>{statsYear++;render();};
@@ -813,7 +813,7 @@ function renderStats(){
     xhs.forEach(l=>{l.setAttribute("x1",X(i));l.setAttribute("x2",X(i));});
     tip.innerHTML=`<b>${mo.m} 月</b><small>${md(mo.st)}～${md(new Date(mo.en-864e5))}</small>`+
       [["見面次數","visits","var(--s1)"],["不同的人","people","var(--s5)"],["有興趣","interest","var(--s2)"],["建議書","proposal","var(--s3)"],["簽約","deal","var(--s4)"]].map(([l,k,col])=>`<div><i class="sw" style="background:${col}"></i>${l}<b>${mo.mt[k]}</b></div>`).join("")+
-      `<div>重複見面<b>${pct(mo.mt,"repeat","visits")}</b></div><div>整體成交率<b>${pct(mo.mt,"deal","visits")}</b></div>`;
+      `<div>重複見面<b>${pct(mo.mt,"repeat","visits")}</b></div><div>成交率<b>${pct(mo.mt,"deal","visits")}</b></div>`;
     tip.hidden=false; const cr=cw.getBoundingClientRect(), px=X(i)/W*r.width;
     tip.style.left=(px>r.width/2?px-150:px+10)+"px"; tip.style.top=Math.max(0,r.top-cr.top-10)+"px";};
   view.querySelectorAll(".hit").forEach(h=>{h.addEventListener("pointermove",show);h.addEventListener("pointerdown",show);h.addEventListener("pointerleave",e=>{if(e.pointerType==="mouse")hide();});});
