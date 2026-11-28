@@ -114,11 +114,11 @@ nav.tabs button.tab[aria-current="page"]{color:var(--accent);font-weight:700}
 .inline{display:flex;gap:8px;align-items:center}
 .inline > *{min-width:0}
 .sheet .actions{justify-content:flex-end}
-.toast .undo{background:none;border:none;color:var(--accent-soft);font-weight:700;text-decoration:underline;margin-left:10px;padding:0}
+.toast .undo{background:none;border:none;color:var(--accent-soft);font-weight:700;text-decoration:underline;padding:0;white-space:nowrap;font-size:14px}
 .recent{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px dashed var(--line);border-radius:10px;padding:8px 10px;font-size:13px}
 .recent span{flex:1;min-width:0;color:var(--muted)}
 .recent b{color:var(--ink)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:8px 16px;border-radius:20px;font-size:14px;z-index:30}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(90px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:14px;z-index:30;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:4px 12px;text-align:center;width:max-content;max-width:calc(100vw - 32px)}
 .note{font-size:13px;color:var(--muted);line-height:1.6}
 .banner{background:var(--accent-soft);color:var(--ink);border-radius:10px;padding:10px 12px;font-size:13px;display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 textarea{resize:vertical}
