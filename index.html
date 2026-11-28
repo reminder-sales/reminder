@@ -473,6 +473,7 @@ function buildTasks(){
       continue;
     }
     if(f.type==="meet"&&!f.track) continue;  /* 單純見面只記錄，不啟動見面後追蹤 */
+    if(f.noTrack) continue;  /* 組合選項裡較早的階段，只記錄不追蹤 */
     const steps=flow(f.type).filter(st=>!st.silent);
     const base=parseD(f.date);
     steps.forEach((st,i)=>{
@@ -720,7 +721,7 @@ function metrics(st,en){
   let visits=0, repeat=0;
   for(const cid in days){const ds=Object.keys(days[cid]).sort(); visits+=ds.length; repeat+=Math.max(0,ds.length-1);}
   return {visits,people:Object.keys(days).length,repeat,
-    interest:fs.filter(f=>f.type==="meet"&&f.track).length, proposal:fs.filter(f=>f.type==="proposal").length, deal:fs.filter(f=>f.type==="deal").length};
+    interest:fs.filter(f=>f.type==="meet"&&(f.track||f.interest)).length, proposal:fs.filter(f=>f.type==="proposal").length, deal:fs.filter(f=>f.type==="deal").length};
 }
 const RATES=[["重複見面","repeat","visits"],["興趣率","interest","visits"],["建議書率","proposal","interest"],["成交率","deal","proposal"],["整體成交率","deal","visits"]];
 function pct(m,num,den){return m[den]?Math.round(m[num]/m[den]*100)+"%":"—"}
@@ -937,10 +938,10 @@ function renderClient(id){
         ${c.stageAutoOn&&c.stage!=="A"?`<span class="hint">${fmtY(parseD(c.stageAutoOn))} 因成交滿半年自動調整</span>`:""}</div>
     </div>
     <section class="section"><div class="inline" style="justify-content:space-between"><h2>追蹤流程</h2></div>
-      <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button><button class="btn" data-addfu="claim">＋ 辦理賠</button></div>
+      <div class="actions"><button class="btn" data-addfu="meet">＋ 剛見完客戶</button><button class="btn" data-addfu="proposal">＋ 剛給建議書</button><button class="btn" data-addfu="deal">＋ 剛成交</button><button class="btn" data-addfu="ip">＋ 興趣＋建議書</button><button class="btn" data-addfu="ipd">＋ 興趣＋建議書＋簽約</button><button class="btn" data-addfu="claim">＋ 辦理賠</button></div>
       ${fuListHTML(fus,f=>{if(f.type==="claim") return claimCardHTML(f);const steps=flow(f.type);const base=parseD(f.date);
-        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${f.type==="meet"&&!f.track?"見面紀錄":TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
-        ${f.type==="meet"&&!f.track?`<div class="detail">只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
+        return `<div class="card" style="gap:8px"><div class="row1 inline" style="flex-wrap:wrap"><span class="chip" style="--tc:${TYPES[f.type].color};color:var(--tc);border-color:var(--tc)">${f.type==="meet"&&!f.track?(f.interest?"見面紀錄（有興趣）":"見面紀錄"):f.noTrack?"建議書紀錄":TYPES[f.type].label}</span><b>${esc(f.item||"")}</b>${f.health?`<span class="ctag" style="background:var(--warn-bg);color:var(--c-rider)">有體況</span>`:""}${f.premium?`<span class="detail">保費 ${esc(f.premium)}</span>`:""}<span style="margin-left:auto;font-family:var(--f-num);font-size:12px;color:var(--muted)">${fmtY(base)}</span></div>
+        ${f.noTrack?`<div class="detail">只記錄給建議書，追蹤以成交為主</div><div class="actions"><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:f.type==="meet"&&!f.track?`<div class="detail">${f.interest?"有激發興趣，":""}只記錄見面，沒有啟動追蹤</div><div class="actions"><button class="btn small" data-track="${f.id}">啟動見面後追蹤</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`:`
         <div class="steps">${steps.map(st=>{const n=st.day,k="fu:"+f.id+":"+n,dd=addDays(base,n),done=state.done[k];
           if(st.silent) return `<span class="step rest" title="${esc(st.tip||"")}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()} 不傳</span>`;
           return `<button class="step ${state.skipped[k]?"skip":done?"done":dd<=t?"due":""}" data-toggle="${k}" title="${esc(st.title||fmtY(dd))}">${dayLabel(n)} ${dd.getMonth()+1}/${dd.getDate()}${state.skipped[k]?" 略過":""}</button>`}).join("")}</div>
@@ -1133,7 +1134,7 @@ function clientSheet(c){
         <div class="inline"><input id="newTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="addTag">加入</button></div></div>
       <div class="field"><label for="copp">商機（可不填）</label><textarea id="copp" rows="2" placeholder="例：明年想換車、孩子要出國念書"></textarea></div>
       <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
-      ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option><option value="claim">辦理賠</option></select></div>
+      ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option><option value="ip">激發興趣＋給建議書</option><option value="ipd">激發興趣＋給建議書＋簽約</option><option value="claim">辦理賠</option></select></div>
       <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 有激發興趣，啟動見面後追蹤（單純見面取得資訊就不用勾）</label>
       <div class="field" id="ndF"><label for="nd" id="ndL">日期</label><input id="nd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint">昨天忘了記，可以改成昨天的日期</span></div>
       <div class="field" id="itemF"><label for="item" id="itemL">商品名稱（可不填）</label><input id="item" placeholder="例：醫療險"></div>
@@ -1151,7 +1152,7 @@ function clientSheet(c){
     const setStage=k=>sp.querySelectorAll("[data-stage]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.stage===k));
     const curStage=()=>{const b=sp.querySelector('[aria-pressed="true"]');return b?b.dataset.stage:"";};
     sp.querySelectorAll("[data-stage]").forEach(b=>b.onclick=()=>{setStage(b.dataset.stage);document.getElementById("spErr").textContent="";});
-    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const im=IMPLIED[nx.value]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("ndF").hidden=!nx.value;document.getElementById("premF").hidden=nx.value!=="deal";document.getElementById("dealF").hidden=nx.value!=="deal";document.getElementById("trackF").hidden=nx.value!=="meet";
+    const nx=document.getElementById("next"); if(nx) nx.onchange=()=>{const bt=baseType(nx.value), im=IMPLIED[bt]; if(im&&(!curStage()||STAGE_RANK[im]>STAGE_RANK[curStage()])) setStage(im);document.getElementById("itemF").hidden=!nx.value;document.getElementById("ndF").hidden=!nx.value;document.getElementById("premF").hidden=bt!=="deal";document.getElementById("dealF").hidden=bt!=="deal";document.getElementById("trackF").hidden=nx.value!=="meet";
       const cl=nx.value==="claim"; document.getElementById("ndL").textContent=cl?"送件日期":"日期"; document.getElementById("itemL").textContent=cl?"理賠項目":"商品名稱（可不填）"; document.getElementById("item").placeholder=cl?"例：住院醫療理賠":"例：醫療險";};
     const tp=document.getElementById("tp");
     const bindTags=()=>tp.querySelectorAll("[data-tag]").forEach(b=>b.onclick=()=>b.setAttribute("aria-pressed",b.getAttribute("aria-pressed")!=="true"));
@@ -1173,8 +1174,9 @@ function clientSheet(c){
         tags:[...tp.querySelectorAll('[data-tag][aria-pressed="true"]')].map(b=>b.dataset.tag)};
       let id;
       if(isNew){id=uid();state.clients.push(Object.assign({id},data));
-        if(nx&&nx.value){bumpStage(state.clients[state.clients.length-1],nx.value);} 
-        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:nx.value,date:document.getElementById("nd").value||ymd(today()),...(nx.value==="claim"?{nextCheck:ymd(addDays(parseD(document.getElementById("nd").value||ymd(today())),2)),log:[]}:{}),item:document.getElementById("item").value.trim(),premium:nx.value==="deal"?document.getElementById("prem").value.trim():undefined,track:nx.value==="meet"?document.getElementById("track").checked:undefined,...(nx.value==="deal"?readDealOpts("n"):{})});
+        const bt=nx?baseType(nx.value):"", nd=document.getElementById("nd")?document.getElementById("nd").value||ymd(today()):ymd(today());
+        if(nx&&nx.value){bumpStage(state.clients[state.clients.length-1],bt); state.followups.push(...comboExtras(nx.value,id,nd,document.getElementById("item").value.trim()));}
+        if(nx&&nx.value) state.followups.push({id:uid(),clientId:id,type:bt,date:document.getElementById("nd").value||ymd(today()),...(nx.value==="claim"?{nextCheck:ymd(addDays(parseD(document.getElementById("nd").value||ymd(today())),2)),log:[]}:{}),item:document.getElementById("item").value.trim(),premium:bt==="deal"?document.getElementById("prem").value.trim():undefined,track:bt==="meet"?document.getElementById("track").checked:undefined,...(bt==="deal"?readDealOpts("n"):{})});
       }else{Object.assign(c,data);id=c.id;}
       save();closeSheet();openClient=id;render();toast((isNew?"已新增客戶":"已更新")+(masked?"，姓名已自動遮罩為 "+name:""));
     };
@@ -1229,9 +1231,20 @@ function claimSheet(clientId){
       save();closeSheet();render();toast(fmt(addDays(parseD(d),2))+" 會提醒你檢查理賠進度");};
   });
 }
+/* 組合選項：激發興趣＋建議書（只跑建議書追蹤）、激發興趣＋建議書＋簽約（只跑成交追蹤） */
+const COMBOS={ip:{label:"激發興趣＋給建議書",base:"proposal"},ipd:{label:"激發興趣＋給建議書＋簽約",base:"deal"}};
+function baseType(v){return COMBOS[v]?COMBOS[v].base:v}
+function comboExtras(combo,clientId,date,item){
+  if(!COMBOS[combo]) return [];
+  const out=[{id:uid(),clientId,type:"meet",date,interest:true,track:false}];
+  if(combo==="ipd") out.push({id:uid(),clientId,type:"proposal",date,item,noTrack:true});
+  return out;
+}
 function followupSheet(clientId,type){
+  const combo=COMBOS[type]?type:""; if(combo) type=COMBOS[combo].base;
   const steps=flow(type).filter(st=>!st.silent), isMeet=type==="meet", cl=client(clientId);
-  openSheet(`<h3>${isMeet?"剛見完客戶":type==="proposal"?"剛給完建議書":"剛成交"}</h3>
+  openSheet(`<h3>${combo?COMBOS[combo].label:isMeet?"剛見完客戶":type==="proposal"?"剛給完建議書":"剛成交"}</h3>
+    ${combo?`<p class="note" style="margin:0">會記錄見面（有激發興趣）${combo==="ipd"?"、給建議書和簽約":"和給建議書"}，追蹤只跑最後一個階段：${combo==="ipd"?"成交後的追蹤":"建議書追蹤"}。</p>`:""}
     <form id="ff" style="display:flex;flex-direction:column;gap:14px">
       ${isMeet?`<div class="field"><label for="fd">${isMeet?"見面日期":"日期"}</label><input id="fd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint" id="fdHint">今天 ${fmt(today())}；昨天忘了記，可以改成昨天的日期</span></div>
       <div class="field"><label for="finfo">這次得到的資訊</label>
@@ -1284,6 +1297,7 @@ function followupSheet(clientId,type){
         }
       }
       const fp=$("fp");
+      state.followups.push(...comboExtras(combo,clientId,d,$("fi").value.trim()));
       state.followups.push({id:uid(),clientId,type,date:d,item:$("fi").value.trim(),premium:fp?fp.value.trim():undefined,...(type==="deal"?readDealOpts("f"):{}),track:isMeet?tracking:undefined,summary:summary||undefined});
       const before=cl&&cl.stage; bumpStage(cl,type);
       save();closeSheet();render();
