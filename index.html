@@ -184,6 +184,8 @@ select:disabled{opacity:.45}
 .overbox small{color:var(--muted)}
 .overbox.bad{border-color:var(--c-rider);background:var(--warn-bg)}
 .overbox.bad .num{color:var(--c-rider)}
+.calc summary{cursor:pointer;font-size:13px;color:var(--muted);list-style:none}
+.calc summary::-webkit-details-marker{display:none}
 .saved{font-size:12px;color:var(--muted);text-align:right}
 .pcard{cursor:pointer;text-align:left;width:100%;font:inherit;color:inherit}
 .pcard .hint{font-size:12px;color:var(--muted)}
@@ -441,12 +443,12 @@ function dealOptsHTML(pre){const W=state.settings.waitSteps;
     <label class="inline bdu"><input type="checkbox" id="${pre}rd"> 有批註／加費</label>
     <div class="field" id="${pre}rdF" hidden style="padding-left:26px"><label for="${pre}rdd" style="font-weight:400;font-size:13px">什麼時候可以申請複查（拿掉批註／加費）</label><input id="${pre}rdd" type="date">
       <div class="actions"><button type="button" class="btn small" data-rplus="${pre}:6">半年後</button><button type="button" class="btn small" data-rplus="${pre}:12">1 年後</button><button type="button" class="btn small" data-rplus="${pre}:24">2 年後</button></div>
-      <span class="hint">不用記內容，到期前 ${state.settings.riderLead} 天會提醒你進公司系統查詢後再幫客戶處理。</span></div>
+      <span class="hint">到期前 ${state.settings.riderLead} 天提醒</span></div>
     <label class="inline bdu"><input type="checkbox" id="${pre}mo"> 月配息</label>
     <div class="field" id="${pre}moF" hidden style="padding-left:26px"><input id="${pre}amt" placeholder="每月配息金額，例：3,000 元">
-      <label for="${pre}sd" style="font-weight:400;font-size:13px">保單簽收日（還不知道可以之後在客戶頁補填）</label><input id="${pre}sd" type="date"></div>
+      <label for="${pre}sd" style="font-weight:400;font-size:13px">保單簽收日（可之後補填）</label><input id="${pre}sd" type="date"></div>
     ${W.map((st,i)=>`<label class="inline bdu"><input type="checkbox" id="${pre}w${i}"> ${esc(waitLabel(st))}</label>`).join("")}
-  </div><span class="hint">月配息：簽收後第 ${state.settings.fundDays} 天提醒你告訴客戶基金已進場。等待期：結束當天提醒。</span></div>`}
+  </div></div>`}
 function bindDealOpts(pre){const $=id=>document.getElementById(pre+id), m=$("mo"); if(!m) return;
   document.querySelectorAll(`[data-cstep^="${pre}:"]`).forEach(b=>b.onclick=()=>{const i=$("cnt");i.value=Math.max(1,(parseInt(i.value)||1)+ +b.dataset.cstep.split(":")[1]);});
   m.onchange=()=>$("moF").hidden=!m.checked;
@@ -626,7 +628,7 @@ function taskHTML(k){
   return `<article class="task ${late?"overdue":""}" style="--tc:${ty.color}" data-card="${k.c.id}" title="點一下打開客戶資料">
     <div class="row1"><span class="chip">${ty.label}</span>${stageHTML(k.c)}<span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span><span class="go" aria-hidden="true">›</span></div>
     <div class="detail">${esc(k.detail)}</div>
-    ${k.moreLater?`<div class="detail" style="font-weight:700">之後還有 ${k.moreLater} 則同一個追蹤，完成這則後會接著出現</div>`:""}
+    ${k.moreLater?`<div class="detail" style="font-weight:700">此還有 ${k.moreLater} 次追蹤</div>`:""}
     ${k.tip?`<div class="tip"><b>訣竅</b>　${esc(k.tip)}</div>`:""}
     ${k.c.opp?`<div class="detail" style="color:var(--c-anni);font-weight:700">商機：${esc(k.c.opp)}</div>`:""}
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
@@ -636,12 +638,12 @@ function taskHTML(k){
       <button class="donebtn" data-claim="wait" data-fid="${k.fid}">還在審核，兩天後再檢查</button></article>`:
     k.type==="appt"?`<div class="inline" style="flex-wrap:wrap"><input type="datetime-local" id="ap_${k.fid}" aria-label="預定見面時間" style="flex:1;min-width:180px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px"><button class="btn small primary" data-apsave="${k.fid}">儲存見面時間</button></div>
     <div class="actions"><button class="btn small" data-apsnooze="${k.fid}">還沒約到，明天再提醒</button><button class="btn small" data-done="${esc(k.key)}">不用約了</button></div></article>`:
-    k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button><div class="skiprow"><button class="skipbtn" data-skip="${esc(k.key)}">這次沒見成，略過</button>${skipCountHTML(k.c)}</div></article>`:`
+    k.type==="visit"?`<button class="donebtn" data-done="${esc(k.key)}">✓ 已見面 <small>按這裡完成</small></button><div class="skiprow"><button class="skipbtn" data-skip="${esc(k.key)}">略過這次</button>${skipCountHTML(k.c)}</div></article>`:`
     <div class="actions">
       ${msgs.map(m=>`<a class="btn small line" data-line="${esc(m.text)}" href="https://line.me/R/nv/chat" target="_blank" rel="noopener">${m.label?"複製「"+esc(m.label)+"」並開 LINE":"複製並開 LINE"}</a>`).join("")}
     </div>
     <button class="donebtn" data-done="${esc(k.key)}">${k.call?"✓ 已打電話":"✓ 已聯絡"} <small>按這裡完成</small></button>
-    <div class="skiprow"><button class="skipbtn" data-skip="${esc(k.key)}">這次不適合聯絡，略過</button>${skipCountHTML(k.c)}</div></article>`}`;
+    <div class="skiprow"><button class="skipbtn" data-skip="${esc(k.key)}">略過這次</button>${skipCountHTML(k.c)}</div></article>`}`;
 }
 /* 由提醒的 key 找出是哪一位客戶 */
 function keyClient(k){
@@ -669,7 +671,7 @@ function staleOppHTML(){
   </section>`;
 }
 function skipCount(c){return Object.keys(state.skipped).filter(k=>keyClient(k)===c.id).length}
-function skipCountHTML(c){const n=skipCount(c);return `<span class="skipcnt ${n>=3?"many":""}">這位客戶已略過 ${n} 次</span>`}
+function skipCountHTML(c){const n=skipCount(c);return n?`<span class="skipcnt ${n>=3?"many":""}">已略過 ${n} 次</span>`:""}
 /* 還有待辦提醒的紀錄才算「追蹤中」；其他收合起來 */
 let fuOldOpen=false;
 function activeFuIds(){
@@ -684,7 +686,7 @@ function fuListHTML(fus,card){
   if(!fus.length) return `<div class="empty">尚無追蹤紀錄</div>`;
   const act=activeFuIds(), on=fus.filter(f=>act.has(f.id)), off=fus.filter(f=>!act.has(f.id));
   return (on.length?on.map(card).join(""):`<div class="empty">目前沒有進行中的追蹤</div>`)+
-    (off.length?`<details id="fuOld" ${fuOldOpen?"open":""}><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);padding:4px 0">已結束或只有見面的紀錄（${off.length} 筆）</summary>
+    (off.length?`<details id="fuOld" ${fuOldOpen?"open":""}><summary style="cursor:pointer;font-size:13px;font-weight:700;color:var(--muted);padding:4px 0">過去紀錄（${off.length} 筆）</summary>
       <div class="section" style="margin-top:8px">${off.map(card).join("")}</div></details>`:"");
 }
 function claimCardHTML(f){
@@ -760,7 +762,7 @@ function monthStatsHTML(){
     <button class="mlink" id="goStats" aria-label="看全年每月變化" style="display:flex;flex-direction:column;gap:8px">
     <div class="mstats">${tiles.map(([l,v,sub,prev,col])=>`<div class="mstat"><b><i class="sw" style="background:${col}"></i>${v}</b><span>${l==="簽約"?"簽約件數":l+"次數"}</span><span class="sub">${sub}</span><small>${prev}</small></div>`).join("")}</div>
     <div class="rates">${rateRow("本月",m,md(st)+"～"+md(new Date(en-864e5)))}${rateRow("近 90 天",qm,md(qs)+"～"+md(new Date(qe-864e5)))}</div></button>
-    <span class="hint" style="font-size:12px;color:var(--muted);text-align:right">點一下看全年每月、每季變化 ›</span>
+    <span class="hint" style="font-size:12px;color:var(--muted);text-align:right">看全年/季 ›</span>
     ${overHTML("本月",m)}${overHTML("近 90 天",qm)}</section>`;
 }
 /* ---------- 全年趨勢 ---------- */
@@ -792,12 +794,11 @@ function renderStats(){
     <button class="backlink" id="back">‹ 返回</button>
     <div class="inline" style="justify-content:space-between"><h2>${Y} 年活動量</h2>
       <div class="seg"><button id="yPrev" aria-label="上一年">‹ ${Y-1}</button>${Y<cur.Y?`<button id="yNext" aria-label="下一年">${Y+1} ›</button>`:""}</div></div>
-    <p class="note" style="margin:0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約、辦理賠都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。過度拜訪：同一期內見同一位客戶 4 次以上，而且 45 天內沒有成交；佔比 = 這些客戶的見面次數 ÷ 總見面次數，建議 15% 以下。</p>
+    <details class="calc"><summary>計算方式 ›</summary><p class="note" style="margin:6px 0 0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約、辦理賠都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。過度拜訪：同一期內見同一位客戶 4 次以上，而且 45 天內沒有成交；佔比 = 這些客戶的見面次數 ÷ 總見面次數，建議 15% 以下。</p></details>
     <h2>近 90 天（每季）</h2>
     ${rateTable([{name:"近 90 天<br><small>"+md(q1s)+"～"+md(new Date(q1e-864e5))+"</small>",mt:metrics(q1s,q1e),cur:true},{name:"再前 90 天<br><small>"+md(q2s)+"～"+md(new Date(q2e-864e5))+"</small>",mt:metrics(q2s,q2e)}],"期間")}
     <h2>每月變化</h2>
-    <div class="card" style="gap:10px"><div class="chartwrap" id="cw">${charts.map(mini).join("")}<div class="tip2" id="tip2" hidden></div></div>
-      <p class="note" style="margin:0;font-size:12px">點圖上的月份可以看那個月的數字。</p></div>
+    <div class="card" style="gap:10px"><div class="chartwrap" id="cw">${charts.map(mini).join("")}<div class="tip2" id="tip2" hidden></div></div></div>
     <h2>每月轉換率</h2>
     ${rateTable(months.map(x=>({name:x.m+" 月",mt:x.mt,cur:Y===cur.Y&&x.m===cur.mo})),"月份")}
     <p class="note" style="margin:0">全年：見面 ${yr.visits} 次、${yr.people} 位不同的人、重複見面 ${pct(yr,"repeat","visits")}；有興趣 ${yr.interest} 次、建議書 ${yr.proposal} 次、簽約 ${yr.deal} 次；整體成交率 ${pct(yr,"deal","visits")}。</p>`;
@@ -834,7 +835,7 @@ function renderToday(){
     </section>
     ${staleOppHTML()}
     ${recentShown().length?`<section class="section"><h2>最近處理過的 <span class="count">${recentShown().length}</span></h2>
-      <p class="note" style="margin:0">不小心按到「已聯絡」或「略過」，按「改回未聯絡」就會回到待辦。處理後 30 分鐘內都可以改回，之後就會自動隱藏。</p>
+      <p class="note" style="margin:0">30分鐘內可編輯</p>
       ${recentShown().map(r=>`<div class="recent"><span><b>${esc(r.who)}</b>．${esc(r.what)}．${r.skip?"略過":"已聯絡"}．${fmt(new Date(r.at))}</span><button class="btn small" data-undo="${esc(r.key)}">改回未聯絡</button></div>`).join("")}
     </section>`:""}`;
   bindCommon();
@@ -867,7 +868,6 @@ let oppShow="open", stageFilter="", oppOpen=false;
 function clientOppsHTML(){
   const list=state.clients.filter(c=>(c.opp||"").trim()).sort((a,b)=>STAGE_RANK[b.stage||"D"]-STAGE_RANK[a.stage||"D"]||a.name.localeCompare(b.name,"zh-Hant"));
   return `<section class="section"><h2>商機清單 <span class="count">${list.length}</span></h2>
-    <p class="note" style="margin:0">有填「商機」的客戶都列在這裡，點一下打開客戶資料。</p>
     ${list.length?list.map(c=>`<button class="client" data-open="${c.id}"><span class="avatar st" style="--sc:${STAGES[c.stage||"D"].color}" title="${STAGES[c.stage||"D"].label}">${c.stage||"D"}</span>
       <span class="meta"><b>${esc(c.name)}</b><span class="oppline" style="white-space:pre-wrap">${esc(c.opp)}</span>${tagsHTML(c)}</span></button>`).join("")
     :`<div class="empty">還沒有客戶填商機。<br>在客戶資料頁的「商機」欄填寫，就會出現在這裡。</div>`}
@@ -881,7 +881,7 @@ function renderOpps(){
     <form class="card" id="oppF">
       <h2>早會商機筆記</h2>
       <div class="field"><label for="oppT">今天早會聽到什麼商機？</label><textarea id="oppT" rows="3" placeholder="例：下個月起某商品停售，有小孩的客戶可以先規劃教育金"></textarea></div>
-      <div class="field"><label>適合哪類客戶（選標籤，會自動列出符合的客戶）</label>
+      <div class="field"><label>適合的客戶標籤</label>
         <div class="tagpick" id="oppTags">${state.settings.tags.map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="false">${esc(x)}</button>`).join("")}</div></div>
       <div class="inline"><input id="oppD" type="date" value="${ymd(t)}" aria-label="日期" style="flex:1;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px"><button class="btn primary" type="submit">記下來</button></div>
     </form>
@@ -978,17 +978,17 @@ function renderClient(id){
     </section>
     <section class="section"><h2>客戶資料</h2><div class="card">
       <div class="field"><label for="iOpp">商機</label><textarea id="iOpp" rows="2" placeholder="例：明年想換車、孩子要出國念書、考慮買房">${esc(c.opp||"")}</textarea>
-        <span class="hint">記下這位客戶可能的需求或想推的商品，搜尋也找得到。</span></div>
+        <span class="hint">商品or切入點</span></div>
       <div class="field"><label for="iNote">客戶筆記</label><textarea id="iNote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea>
         <span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
-      <div class="field"><label>標籤（點一下選取／取消）</label>
+      <div class="field"><label>標籤</label>
         <div class="tagpick" id="iTags">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="inline"><input id="iNewTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="iAddTag">加入</button></div></div>
       <div class="field"><label>生日月份</label>
         <div class="inline"><select id="iBm" aria-label="月" style="flex:1" ${c.bdayUnknown?"disabled":""}><option value="">選擇月份</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${(c.bday||"").slice(0,2)===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select></div>
         <label class="inline bdu"><input type="checkbox" id="iBdu" ${c.bdayUnknown?"checked":""}> 不知道生日</label>
         <span class="hint">${c.bdayUnknown?"還不知道生日，下次聯絡時記得問一下":jump?"跳歲月："+ymText(jump)+"（約 "+diff(jump,t)+" 天後）":"填了生日月份就會自動算跳歲月"}</span></div>
-      <div class="saved" id="iSaved">直接修改，會自動儲存</div>
+      <div class="saved" id="iSaved"></div>
     </div></section>
     ${histHTML(c)}
     <button class="btn danger" id="delC" style="align-self:flex-start">刪除這位客戶</button>`;
@@ -1058,7 +1058,7 @@ function renderSettings(){
     </div>
     <div class="card">
       <h2>備份與還原</h2>
-      <p class="note" style="margin:0">資料只存在這支手機的瀏覽器裡，不會上傳。換手機或清除瀏覽器前，請先備份：複製備份碼存到安全的地方。</p>
+      <p class="note" style="margin:0">換手機或清除瀏覽器前，請先備份</p>
       <div class="actions"><button class="btn" id="exp">複製備份碼</button><button class="btn" id="imp">貼上備份碼還原</button></div>
     </div>`;
   document.getElementById("setF").onsubmit=e=>{
@@ -1149,28 +1149,27 @@ function clientSheet(c){
   openSheet(`<h3>${isNew?"新增客戶":"編輯客戶"}</h3>
     <form id="cf" style="display:flex;flex-direction:column;gap:14px">
       <div class="field"><label for="cn">客戶姓名（中間用 Ｏ）</label>
-        <div class="inline"><input id="cn" value="${esc(c.name)}" placeholder="例：陳Ｏ華" autocomplete="off" style="flex:1"><button type="button" class="btn" id="mask">自動遮罩</button></div>
-        <span class="hint">忘了遮罩也沒關係，按儲存時會自動變成 陳Ｏ華，不會存完整姓名。</span><span class="err" id="cnErr"></span></div>
+        <div class="inline"><input id="cn" value="${esc(c.name)}" placeholder="例：陳Ｏ華" autocomplete="off" style="flex:1"></div>
+        <span class="hint">儲存時會自動遮罩</span><span class="err" id="cnErr"></span></div>
       <div class="field"><label>生日月份（只填月份）</label>
         <div class="inline"><select id="bm" aria-label="月" style="flex:1"><option value="">選擇月份</option>${Array.from({length:12},(_,i)=>`<option value="${pad2(i+1)}" ${bm===pad2(i+1)?"selected":""}>${i+1} 月</option>`).join("")}</select></div>
-        <label class="inline bdu"><input type="checkbox" id="bdu" ${c.bdayUnknown?"checked":""}> 不知道生日</label>
-        <span class="hint">用來計算跳歲月，不需要年份和日期。</span></div>
+        <label class="inline bdu"><input type="checkbox" id="bdu" ${c.bdayUnknown?"checked":""}> 不知道生日</label></div>
       <div class="field"><label>客戶階段（必選）</label>${stagePick("sp",isNew?"":c.stage||"D")}<span class="err" id="spErr"></span></div>
       <div class="field"><label>標籤（可複選）</label>
         <div class="tagpick" id="tp">${[...new Set([...state.settings.tags,...(c.tags||[])])].map(x=>`<button type="button" data-tag="${esc(x)}" aria-pressed="${(c.tags||[]).includes(x)}">${esc(x)}</button>`).join("")}</div>
         <div class="inline"><input id="newTag" placeholder="自訂標籤" style="flex:1"><button type="button" class="btn" id="addTag">加入</button></div></div>
       <div class="field"><label for="copp">商機（可不填）</label><textarea id="copp" rows="2" placeholder="例：明年想換車、孩子要出國念書"></textarea></div>
-      <div class="field"><label for="cnote">客戶筆記（新資訊、喜好、家庭狀況）</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
+      <div class="field"><label for="cnote">客戶筆記</label><textarea id="cnote" rows="3" placeholder="例：老大明年上小學、喜歡下午聯絡">${esc(c.note||"")}</textarea><span class="hint">寫模糊一點：不寫病名、檢查數值、身分證字號、電話、地址。例如寫「有體況」「有加費」，細節回公司系統查。</span></div>
       ${isNew?`<div class="field"><label for="next">剛剛發生什麼事？</label><select id="next"><option value="meet" selected>剛見完客戶</option><option value="">只建檔</option><option value="proposal">剛給完建議書</option><option value="deal">剛成交</option><option value="ip">激發興趣＋給建議書</option><option value="ipd">激發興趣＋給建議書＋簽約</option><option value="claim">辦理賠</option></select></div>
-      <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 有激發興趣，啟動見面後追蹤（單純見面取得資訊就不用勾）</label>
-      <div class="field" id="ndF"><label for="nd" id="ndL">日期</label><input id="nd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint">昨天忘了記，可以改成昨天的日期</span></div>
+      <label class="inline" id="trackF" style="font-size:14px"><input type="checkbox" id="track" style="width:auto"> 有激發興趣（啟動追蹤）</label>
+      <div class="field" id="ndF"><label for="nd" id="ndL">日期</label><input id="nd" type="date" value="${ymd(today())}" max="${ymd(today())}"></div>
       <div class="field" id="itemF"><label for="item" id="itemL">商品名稱（可不填）</label><input id="item" placeholder="例：醫療險"></div>
       <div class="field" id="premF" hidden><label for="prem">保費</label><input id="prem" placeholder="例：年繳 36,000 元"></div>
       <div id="dealF" hidden>${dealOptsHTML("n")}</div>`:""}
       <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">儲存</button></div>
     </form>`,()=>{
     const cn=document.getElementById("cn");
-    document.getElementById("mask").onclick=()=>{if(cn.value.trim()&&!MASK.test(cn.value))cn.value=autoMask(cn.value);};
+    const _mk=document.getElementById("mask"); if(_mk) _mk.onclick=()=>{if(cn.value.trim()&&!MASK.test(cn.value))cn.value=autoMask(cn.value);};
     const bdu=document.getElementById("bdu"), bmS=document.getElementById("bm");
     const syncBdu=()=>{bmS.disabled=bdu.checked; if(bdu.checked) bmS.value="";};
     bdu.onchange=syncBdu; syncBdu();
@@ -1249,7 +1248,7 @@ function claimSheet(clientId){
     <form id="cfm" style="display:flex;flex-direction:column;gap:14px">
       <div class="field"><label for="ci">理賠項目</label><input id="ci" placeholder="例：住院醫療理賠"></div>
       <div class="field"><label for="cd">送件日期</label><input id="cd" type="date" value="${ymd(today())}" max="${ymd(today())}"></div>
-      <p class="note" style="margin:0">送件後每 2 天提醒你檢查一次進度，直到理賠完成。</p>
+      <p class="note" style="margin:0">每 2 天提醒檢查進度</p>
       <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">開始追蹤</button></div>
     </form>`,()=>{
     document.getElementById("cfm").onsubmit=e=>{e.preventDefault();
@@ -1271,11 +1270,10 @@ function followupSheet(clientId,type){
   const combo=COMBOS[type]?type:""; if(combo) type=COMBOS[combo].base;
   const steps=flow(type).filter(st=>!st.silent), isMeet=type==="meet", cl=client(clientId);
   openSheet(`<h3>${combo?COMBOS[combo].label:isMeet?"剛見完客戶":type==="proposal"?"剛給完建議書":"剛成交"}</h3>
-    ${combo?`<p class="note" style="margin:0">會記錄見面（有激發興趣）${combo==="ipd"?"、給建議書和簽約":"和給建議書"}，追蹤只跑最後一個階段：${combo==="ipd"?"成交後的追蹤":"建議書追蹤"}。</p>`:""}
     <form id="ff" style="display:flex;flex-direction:column;gap:14px">
-      ${isMeet?`<div class="field"><label for="fd">${isMeet?"見面日期":"日期"}</label><input id="fd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint" id="fdHint">今天 ${fmt(today())}；昨天忘了記，可以改成昨天的日期</span></div>
+      ${isMeet?`<div class="field"><label for="fd">${isMeet?"見面日期":"日期"}</label><input id="fd" type="date" value="${ymd(today())}" max="${ymd(today())}"><span class="hint" id="fdHint"></span></div>
       <div class="field"><label for="finfo">這次得到的資訊</label>
-        <textarea id="finfo" rows="5" placeholder="想到什麼就打什麼，不用管格式。例：老大明年上小學 然後他在考慮換車 有在買ETF 太太比較擔心醫療費"></textarea>
+        <textarea id="finfo" rows="5" placeholder="例：老大明年上小學、考慮換車"></textarea>
         <button type="button" class="btn" id="forgBtn" style="align-self:flex-start">整理重點</button></div>
       <div id="forg" class="card" hidden style="gap:10px">
         <div class="field"><label for="fsum">整理後的重點（可以修改，會存進客戶筆記）</label><textarea id="fsum" rows="5"></textarea></div>
@@ -1286,7 +1284,7 @@ function followupSheet(clientId,type){
       <div class="field"><label for="fi">商品名稱${isMeet?"（可不填）":""}</label><input id="fi" placeholder="例：實支實付醫療險"></div>
       ${type==="deal"?`<div class="field"><label for="fp">保費</label><input id="fp" placeholder="例：年繳 36,000 元"></div>`:""}
       ${isMeet?"":`<div class="field"><label for="fd">日期</label><input id="fd" type="date" value="${ymd(today())}"></div>`}
-      ${isMeet?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 有激發興趣，啟動見面後追蹤（${steps.map(st=>dayLabel(st.day)).join("、")}提醒）</label><p class="note" style="margin:0">單純見面取得資訊就不用勾，只會記錄見面和整理好的重點。</p>`:`<p class="note" style="margin:0">會在${steps.map(st=>dayLabel(st.day)).join("、")}提醒你傳訊息。</p>`}
+      ${isMeet?`<label class="inline" style="font-size:14px"><input type="checkbox" id="ftrack" style="width:auto"> 有激發興趣（啟動追蹤）</label>`:""}
       ${type==="deal"?dealOptsHTML("f"):""}
       <div class="actions"><button type="button" class="btn" data-close>取消</button><button class="btn primary" type="submit">${isMeet?"儲存":"建立提醒"}</button></div>
     </form>`,()=>{
@@ -1305,7 +1303,7 @@ function followupSheet(clientId,type){
       $("forg").hidden=false; return r;
     };
     if(isMeet) $("fd").onchange=()=>{const v=$("fd").value; if(!v) return; const n=diff(today(),parseD(v));
-      $("fdHint").textContent=n===0?"今天 "+fmt(today()):n===1?"昨天 "+fmt(parseD(v))+"，追蹤提醒會從這天開始算":fmt(parseD(v))+"（"+n+" 天前），追蹤提醒會從這天開始算";};
+      $("fdHint").textContent=n===0?"":n===1?"昨天":n+" 天前";};
     if(isMeet) $("forgBtn").onclick=()=>{if(runOrganize()) $("fsum").focus();};
     $("ff").onsubmit=e=>{e.preventDefault();
       const d=$("fd").value; if(!d) return toast("請選擇日期");
