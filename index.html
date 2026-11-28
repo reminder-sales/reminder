@@ -103,8 +103,8 @@ nav.tabs button.tab{background:none;border:none;display:flex;flex-direction:colu
 nav.tabs button.tab svg{width:22px;height:22px}
 nav.tabs button.tab[aria-current="page"]{color:var(--accent);font-weight:700}
 .fab{width:54px;height:54px;border-radius:50%;background:var(--accent);color:var(--accent-ink);border:none;font-size:30px;line-height:1;margin-top:-22px;box-shadow:0 4px 14px rgb(0 0 0 / .2)}
-.sheet-bg{position:fixed;inset:0;background:rgb(0 0 0 / .4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
-.sheet{background:var(--bg);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.sheet-bg{overscroll-behavior:contain;touch-action:none;position:fixed;inset:0;background:rgb(0 0 0 / .4);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{overscroll-behavior:contain;touch-action:pan-y;-webkit-overflow-scrolling:touch;background:var(--bg);width:100%;max-width:560px;max-height:92%;overflow:auto;border-radius:16px 16px 0 0;padding:18px max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
 .sheet h3{margin:0;font-family:var(--f-display);font-size:19px}
 .field{display:flex;flex-direction:column;gap:4px}
 .field label{font-size:13px;font-weight:700}
@@ -1100,14 +1100,21 @@ function bindCommon(){
 
 /* ---------- 抽屜表單 ---------- */
 const root=document.getElementById("sheetRoot");
+/* 開啟抽屜時把後面的頁面固定住，避免在抽屜裡滑動時帶動後面的畫面（iPhone） */
+let lockY=null;
+function lockScroll(){if(lockY!==null) return; lockY=window.scrollY;
+  const b=document.body.style; b.position="fixed"; b.top=-lockY+"px"; b.left="0"; b.right="0"; b.width="100%";}
+function unlockScroll(){if(lockY===null) return; const y=lockY; lockY=null;
+  const b=document.body.style; b.position=""; b.top=""; b.left=""; b.right=""; b.width=""; window.scrollTo(0,y);}
 function openSheet(html,onReady){
+  lockScroll();
   root.innerHTML=`<div class="sheet-bg" id="bg"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
   const bg=document.getElementById("bg");
   bg.onclick=e=>{if(e.target===bg)closeSheet();};
   root.querySelectorAll("[data-close]").forEach(b=>b.onclick=closeSheet);
   onReady&&onReady(root.querySelector(".sheet"));
 }
-function closeSheet(){root.innerHTML="";}
+function closeSheet(){root.innerHTML=""; unlockScroll();}
 /* ---------- 使用須知 ---------- */
 const TERMS_VER=1;
 const TERMS_HTML=`<h3>使用須知</h3>
