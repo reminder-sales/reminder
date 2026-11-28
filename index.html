@@ -693,8 +693,10 @@ function claimCardHTML(f){
     <div class="actions"><button class="btn small" data-claimtoggle="${f.id}">${f.claimDone?"重新開啟追蹤":"標記理賠完成"}</button><button class="btn small danger" data-delfu="${f.id}">刪除</button></div></div>`;
 }
 function histHTML(c){
-  const fs=state.followups.filter(f=>f.clientId===c.id).sort((a,b)=>a.date.localeCompare(b.date));
-  if(!fs.length) return "";
+  const all=state.followups.filter(f=>f.clientId===c.id);
+  const fs=all.filter(f=>f.type!=="claim").sort((a,b)=>a.date.localeCompare(b.date));  /* 理賠不列入經營歷程的時間軸 */
+  const visitDays=new Set(all.filter(f=>VISIT_TYPES.includes(f.type)).map(f=>f.date)).size;  /* 見面次數含理賠，同一天算 1 次 */
+  if(!fs.length) return visitDays?`<section class="section"><h2>經營歷程</h2><div class="card hist"><div class="stats"><div class="stat"><b>${visitDays}</b><span>見面</span></div><div class="stat"><b>0</b><span>建議書</span></div><div class="stat"><b>0</b><span>成交</span></div><div class="stat"><b>0</b><span>已聯絡</span></div></div></div></section>`:"";
   const n=t=>fs.filter(f=>f.type===t).length, ids=new Set(fs.map(f=>f.id));
   const contacts=Object.keys(state.done).filter(k=>{const p=k.split(":");return (p[0]==="fu"||p[0]==="wt")&&ids.has(p[1])&&!state.skipped[k];}).length;
   const t=today(), first=parseD(fs[0].date), last=parseD(fs[fs.length-1].date);
@@ -703,7 +705,7 @@ function histHTML(c){
   const shown=ev.length>8?[ev[0],`<i>…前面還有 ${ev.length-7} 次…</i>`,...ev.slice(-6)]:ev;
   return `<section class="section"><h2>經營歷程</h2><div class="card hist">
     <div class="stats">
-      <div class="stat"><b>${n("meet")}</b><span>見面</span></div>
+      <div class="stat"><b>${visitDays}</b><span>見面</span></div>
       <div class="stat"><b>${n("proposal")}</b><span>建議書</span></div>
       <div class="stat"><b>${n("deal")}</b><span>成交</span></div>
       <div class="stat"><b>${contacts}</b><span>已聯絡</span></div></div>
@@ -714,10 +716,10 @@ function tagsHTML(c){const t=c.tags||[];return t.length?`<div class="ctags">${t.
 /* 統計週期：每月 25 日起算，到下個月 24 日 */
 function periodStart(d){return d.getDate()>=25?new Date(d.getFullYear(),d.getMonth(),25):new Date(d.getFullYear(),d.getMonth()-1,25)}
 /* ---------- 活動量統計 ----------
-   見面次數：見面、遞建議書、簽約都算見面；同一位客戶同一天只算 1 次
+   見面次數：見面、遞建議書、簽約、辦理賠都算見面；同一位客戶同一天只算 1 次
    有興趣／建議書／簽約：直接算次數（同一人兩次就算 2）
    重複見面：同一期內第 2 次以後見同一位客戶，不管那次有沒有進展 */
-const VISIT_TYPES=["meet","proposal","deal"];
+const VISIT_TYPES=["meet","proposal","deal","claim"];  /* 辦理賠一定會見面，也算見面 */
 function metrics(st,en){
   const fs=state.followups.filter(f=>{const d=parseD(f.date);return d>=st&&d<en&&client(f.clientId);});
   const vis=fs.filter(f=>VISIT_TYPES.includes(f.type));
@@ -788,7 +790,7 @@ function renderStats(){
     <button class="backlink" id="back">‹ 返回</button>
     <div class="inline" style="justify-content:space-between"><h2>${Y} 年活動量</h2>
       <div class="seg"><button id="yPrev" aria-label="上一年">‹ ${Y-1}</button>${Y<cur.Y?`<button id="yNext" aria-label="下一年">${Y+1} ›</button>`:""}</div></div>
-    <p class="note" style="margin:0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。過度拜訪：同一期內見同一位客戶 4 次以上，而且 45 天內沒有成交；佔比 = 這些客戶的見面次數 ÷ 總見面次數，建議 15% 以下。</p>
+    <p class="note" style="margin:0">每個月從前一個月 25 日算到當月 24 日，例如「12 月」是 11/25～12/24。季的數字是從今天往前推 90 天。見面、遞建議書、簽約、辦理賠都算見面，同一位客戶同一天只算 1 次；有興趣、建議書、簽約直接算次數。重複見面：同一期內第 2 次以後再見同一位客戶，不管那次有沒有進展都算。過度拜訪：同一期內見同一位客戶 4 次以上，而且 45 天內沒有成交；佔比 = 這些客戶的見面次數 ÷ 總見面次數，建議 15% 以下。</p>
     <h2>近 90 天（每季）</h2>
     ${rateTable([{name:"近 90 天<br><small>"+md(q1s)+"～"+md(new Date(q1e-864e5))+"</small>",mt:metrics(q1s,q1e),cur:true},{name:"再前 90 天<br><small>"+md(q2s)+"～"+md(new Date(q2e-864e5))+"</small>",mt:metrics(q2s,q2e)}],"期間")}
     <h2>每月變化</h2>
