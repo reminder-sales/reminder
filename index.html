@@ -292,7 +292,7 @@ function load(){
   s.done=s.done||{};
   s.opps=s.opps||[];
   s.skipped=s.skipped||{};
-  s.recent=(s.recent||[]).filter(r=>Date.now()-r.at<3*86400000);  /* 最近處理過的提醒，保留 3 天方便復原 */
+  s.recent=(s.recent||[]).filter(r=>Date.now()-r.at<30*60000);  /* 最近處理過的提醒，30 分鐘內可以復原 */
   for(const c of s.clients) if(c.bday&&c.bday.length>2) c.bday=c.bday.slice(0,2);  /* 生日改成只存月份 */
   /* 舊設定升級：成交第 1 天訊息加入月配息、基金進場訊息加入金額 */
   if(s.settings.tpl.fund==="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。之後每月配息入帳的時間和查詢方式，我再整理給您，有任何問題隨時問我！") s.settings.tpl.fund="{name}您好，跟您報告：您的{item}已經過了契約撤銷期，資金已經正式投入基金進場了。預計每月配息約 {amount}，入帳的時間和查詢方式我再整理給您，有任何問題隨時問我！";
@@ -813,9 +813,9 @@ function renderToday(){
       ${due.length?due.map(taskHTML).join(""):`<div class="empty">今天沒有待辦。<br>見完客戶後按下方「＋」新增。</div>`}
     </section>
     ${staleOppHTML()}
-    ${state.recent.length?`<section class="section"><h2>最近處理過的 <span class="count">${state.recent.length}</span></h2>
-      <p class="note" style="margin:0">不小心按到「已聯絡」或「略過」，按「改回未聯絡」就會回到待辦。保留最近 3 天。</p>
-      ${state.recent.map(r=>`<div class="recent"><span><b>${esc(r.who)}</b>．${esc(r.what)}．${r.skip?"略過":"已聯絡"}．${fmt(new Date(r.at))}</span><button class="btn small" data-undo="${esc(r.key)}">改回未聯絡</button></div>`).join("")}
+    ${recentShown().length?`<section class="section"><h2>最近處理過的 <span class="count">${recentShown().length}</span></h2>
+      <p class="note" style="margin:0">不小心按到「已聯絡」或「略過」，按「改回未聯絡」就會回到待辦。處理後 30 分鐘內都可以改回，之後就會自動隱藏。</p>
+      ${recentShown().map(r=>`<div class="recent"><span><b>${esc(r.who)}</b>．${esc(r.what)}．${r.skip?"略過":"已聯絡"}．${fmt(new Date(r.at))}</span><button class="btn small" data-undo="${esc(r.key)}">改回未聯絡</button></div>`).join("")}
     </section>`:""}`;
   bindCommon();
   document.getElementById("goStats").onclick=()=>{statsYear=null;tab="stats";render();};
@@ -1355,6 +1355,7 @@ function importSheet(){
 
 /* ---------- 小工具 ---------- */
 let toastT;
+function recentShown(){return state.recent.filter(r=>Date.now()-r.at<30*60000)}
 function undoDone(k){
   delete state.done[k]; delete state.skipped[k];
   state.recent=state.recent.filter(r=>r.key!==k);
