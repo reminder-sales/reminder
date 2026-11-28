@@ -628,7 +628,7 @@ function taskHTML(k){
   return `<article class="task ${late?"overdue":""}" style="--tc:${ty.color}" data-card="${k.c.id}" title="點一下打開客戶資料">
     <div class="row1"><span class="chip">${ty.label}</span>${stageHTML(k.c)}<span class="who">${esc(k.c.name)}</span><span class="when">${esc(when)}</span><span class="go" aria-hidden="true">›</span></div>
     <div class="detail">${esc(k.detail)}</div>
-    ${k.moreLater?`<div class="detail" style="font-weight:700">此還有 ${k.moreLater} 次追蹤</div>`:""}
+    ${k.moreLater?`<div class="detail" style="font-weight:700">此客戶還有 ${k.moreLater} 次追蹤</div>`:""}
     ${k.tip?`<div class="tip"><b>訣竅</b>　${esc(k.tip)}</div>`:""}
     ${k.c.opp?`<div class="detail" style="color:var(--c-anni);font-weight:700">商機：${esc(k.c.opp)}</div>`:""}
     ${tagsHTML(k.c)}${k.c.note?`<div class="detail">筆記：${esc(k.c.note)}</div>`:""}
